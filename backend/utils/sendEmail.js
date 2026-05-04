@@ -6,13 +6,26 @@ const sendEmail = async (options) => {
     return;
   }
 
+  console.log(' Attempting to send email via:', process.env.EMAIL_SERVICE || 'gmail');
+  
   const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
+
+  // Verify connection configuration
+  try {
+    await transporter.verify();
+    console.log(' SMTP Server is ready to take our messages');
+  } catch (err) {
+    console.error(' SMTP Verification failed:', err.message);
+    throw err;
+  }
 
   const mailOptions = {
     from: `🍽️ Foodie App <${process.env.EMAIL_USER}>`,
