@@ -61,7 +61,7 @@ const getMyOrders = async (req, res, next) => {
     const reviews = await DeliveryReview.find({ user: req.user._id });
     
     const ordersWithReviews = orders.map(order => {
-      const review = reviews.find(r => r.order.toString() === order._id.toString());
+      const review = reviews.find(r => String(r.order) === String(order._id));
       return {
         ...order._doc,
         deliveryReview: review || null

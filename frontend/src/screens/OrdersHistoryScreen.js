@@ -12,6 +12,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [isReviewVisible, setIsReviewVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
 
   const fetchOrders = async () => {
     try {
@@ -132,7 +133,9 @@ const OrdersHistoryScreen = ({ navigation }) => {
           {item.orderStatus === 'delivered' ? (
             <TouchableOpacity 
               onPress={() => {
-                setSelectedOrder(item.orders?.find(o => o.deliveryPerson) || item);
+                const realOrder = item.orders && item.orders.length > 0 ? item.orders[0] : item;
+                setSelectedOrder(realOrder);
+                setSelectedReview(item.deliveryReview);
                 setIsReviewVisible(true);
               }}
               className={`flex-row items-center px-4 py-2 rounded-xl ${item.deliveryReview ? 'bg-green-500' : 'bg-green-500/10'}`}
@@ -184,7 +187,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
         driverId={selectedOrder?.deliveryPerson?._id}
         driverName={selectedOrder?.deliveryPerson?.name}
         onSuccess={fetchOrders}
-        initialData={selectedOrder?.deliveryReview}
+        initialData={selectedReview}
       />
     </SafeAreaView>
   );
