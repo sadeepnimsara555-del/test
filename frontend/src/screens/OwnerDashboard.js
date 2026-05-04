@@ -10,6 +10,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import api, { API_URL } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { getCurrentAddress } from '../utils/mapUtils';
 
 const OwnerDashboard = ({ navigation, route }) => {
   const { initialTab } = route.params || {};
@@ -34,6 +35,7 @@ const OwnerDashboard = ({ navigation, route }) => {
   const [stats, setStats] = useState({ history: [], withdrawnLogs: [], withdrawals: [], totalEarnings: 0, lifetimeEarnings: 0 });
   const [editingItem, setEditingItem] = useState(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -460,6 +462,20 @@ const OwnerDashboard = ({ navigation, route }) => {
         }
       }}
     ]);
+  };
+
+  const handleTagLocation = async () => {
+    setLocationLoading(true);
+    try {
+      const addr = await getCurrentAddress();
+      if (addr) {
+        setResForm({ ...resForm, address: addr });
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Could not fetch location');
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   const handleUpdateRestaurant = async () => {
@@ -970,15 +986,31 @@ const OwnerDashboard = ({ navigation, route }) => {
                    </View>
 
                    <View>
-                      <Text className="text-gray-500 mb-1 ml-1 text-xs font-bold uppercase">Street Address</Text>
-                      <TextInput
-                        className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary"
-                        value={resForm.address}
-                        onChangeText={(t) => setResForm({...resForm, address: t})}
-                        placeholder="123 Food Lane"
-                        multiline
-                      />
-                   </View>
+                       <Text className="text-gray-500 mb-1 ml-1 text-xs font-bold uppercase">Street Address</Text>
+                       <View className="bg-gray-50 p-2 rounded-2xl border border-gray-100 flex-row items-center">
+                          <TextInput
+                            className="flex-1 p-2 text-secondary"
+                            value={resForm.address}
+                            onChangeText={(t) => setResForm({...resForm, address: t})}
+                            placeholder="123 Food Lane"
+                            multiline
+                          />
+                          <TouchableOpacity 
+                            onPress={handleTagLocation}
+                            disabled={locationLoading}
+                            className="bg-primary p-3 rounded-xl ml-2 shadow-sm active:opacity-80"
+                          >
+                            {locationLoading ? (
+                              <ActivityIndicator size="small" color="white" />
+                            ) : (
+                              <View className="flex-row items-center px-1">
+                                <Globe size={16} color="white" />
+                                <Text className="text-white text-[10px] font-bold ml-1">Tag</Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                       </View>
+                    </View>
 
                    <View>
                       <Text className="text-gray-500 mb-1 ml-1 text-xs font-bold uppercase">Contact Number</Text>
