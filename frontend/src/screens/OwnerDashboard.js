@@ -355,8 +355,12 @@ const OwnerDashboard = ({ navigation, route }) => {
   };
 
   const handleWithdraw = async () => {
-    if (!withdrawAmount || Number(withdrawAmount) < 60) {
-      Alert.alert('Error', 'Minimum withdrawal amount is Rs. 60.00');
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    if (Number(withdrawAmount) > stats.totalEarnings) {
+      Alert.alert('Error', 'Insufficient balance');
       return;
     }
     if (Number(withdrawAmount) > stats.totalEarnings) {
@@ -875,13 +879,13 @@ const OwnerDashboard = ({ navigation, route }) => {
 
                <TouchableOpacity 
                 onPress={() => {
-                  if (stats.totalEarnings < 60) {
-                    Alert.alert('Insufficient Balance', 'Minimum withdrawal is Rs. 60.00');
+                  if (stats.totalEarnings < 1000) {
+                    Alert.alert('Threshold Not Met', 'Minimum balance of Rs. 1000.00 is required to initiate a withdrawal.');
                     return;
                   }
                   setIsWithdrawModalVisible(true);
                 }}
-                className={`p-5 rounded-3xl flex-row items-center justify-center ${stats.totalEarnings >= 60 ? 'bg-primary' : 'bg-white/10'}`}
+                className={`p-5 rounded-3xl flex-row items-center justify-center ${stats.totalEarnings >= 1000 ? 'bg-primary' : 'bg-white/10'}`}
                >
                   <DollarSign size={20} color="white" />
                   <Text className="text-white font-black text-base ml-2">Request Payout</Text>
@@ -1223,7 +1227,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                   <Text className="text-4xl font-black text-emerald-600">Rs. {stats.totalEarnings.toFixed(2)}</Text>
                 </View>
 
-                <Text className="text-gray-500 mb-3 ml-1 text-[10px] font-bold uppercase">Enter Amount (Min Rs. 60.00)</Text>
+                <Text className="text-gray-500 mb-3 ml-1 text-[10px] font-bold uppercase">Enter Amount to Withdraw</Text>
                 <TextInput 
                   className="bg-gray-50 p-6 rounded-3xl border border-gray-100 text-2xl font-black text-secondary mb-8 text-center"
                   placeholder="0.00"
