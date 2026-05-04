@@ -7,28 +7,23 @@ if (dns.setDefaultResultOrder) {
 }
 
 const sendEmail = async (options) => {
-  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-
-  if (!emailUser || !emailPass) {
-    console.warn('⚠️  Email not sent: EMAIL_USER/SMTP_USER or EMAIL_PASS/SMTP_PASS is missing in environment variables');
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️  Email not sent: EMAIL_USER or EMAIL_PASS is missing in environment variables');
     return;
   }
 
-  console.log(' Attempting to send email via:', process.env.EMAIL_SERVICE || 'gmail');
-  
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: process.env.SMTP_PORT == 465, // true only for 465
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-      user: emailUser,
-      pass: emailPass,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
     tls: {
       rejectUnauthorized: false,
     },
-    family: 4, // Force IPv4
+    family: 4, // Force IPv4 to avoid ENETUNREACH on Railway
   });
 
   // Verify connection configuration
@@ -41,7 +36,7 @@ const sendEmail = async (options) => {
   }
 
   const mailOptions = {
-    from: `🍽️ Foodie App <${emailUser}>`,
+    from: `🍽️ Foodie App <${process.env.EMAIL_USER}>`,
     to: options.email,
     subject: options.subject,
     html: options.html,
