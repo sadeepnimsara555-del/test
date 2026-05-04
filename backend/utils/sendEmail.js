@@ -12,38 +12,22 @@ const sendEmail = async (options) => {
     return;
   }
 
-  let smtpHost = 'smtp.gmail.com';
-  try {
-    // Resolve to IPv4 list and pick the first one
-    const addresses = await require('dns').promises.resolve4('smtp.gmail.com');
-    smtpHost = addresses[0];
-    console.log(`📡 [v3-${new Date().toLocaleTimeString()}] Resolved smtp.gmail.com to IPv4: ${smtpHost}`);
-  } catch (dnsErr) {
-    console.warn('⚠️ DNS Resolve failed, using hostname:', dnsErr.message);
-  }
-
-  console.log(`📡 [v4] Attempting email via ${smtpHost}:465`);
+  console.log(`📡 [v5] Attempting email via built-in Gmail service for ${options.email}`);
   
   const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: 465,
-    secure: true, // Port 465 uses SSL/TLS
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-      servername: 'smtp.gmail.com',
     },
   });
 
   // Verify connection configuration
   try {
     await transporter.verify();
-    console.log(' SMTP Server is ready to take our messages');
+    console.log(' ✅ SMTP Server is ready to take our messages');
   } catch (err) {
-    console.error(' SMTP Verification failed:', err.message);
+    console.error(' ❌ SMTP Verification failed:', err.message);
     throw err;
   }
 
