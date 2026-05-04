@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Star, X, CheckCircle } from 'lucide-react-native';
+import { Star, X, CheckCircle, Trash2 } from 'lucide-react-native';
 import api from '../services/api';
 
-const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName, onSucess }) => {
+const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName, onSuccess, initialData }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isVisible) {
+    if (isVisible && initialData) {
+      setRating(initialData.rating);
+      setComment(initialData.comment);
+    } else if (isVisible) {
       setRating(0);
       setComment('');
     }
-  }, [isVisible]);
+  }, [isVisible, initialData]);
 
   const handleSubmit = async () => {
     if (rating === 0 || !comment) {
@@ -23,15 +26,25 @@ const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName
 
     setLoading(true);
     try {
-      await api.post('/delivery-reviews', {
-        order: orderId,
-        deliveryPerson: driverId,
-        rating,
-        comment,
-      });
+      if (initialData) {
+        // Update existing review
+        await api.put(`/delivery-reviews/${initialData._id}`, {
+          rating,
+          comment,
+        });
+        Alert.alert('Success', 'Your review has been updated!');
+      } else {
+        // Create new review
+        await api.post('/delivery-reviews', {
+          order: orderId,
+          deliveryPerson: driverId,
+          rating,
+          comment,
+        });
+        Alert.alert('Success', 'Thank you for rating your delivery driver!');
+      }
       
-      Alert.alert('Success', 'Thank you for rating your delivery driver!');
-      if (onSucess) onSucess();
+      if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to submit review');
@@ -40,18 +53,48 @@ const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName
     }
   };
 
+  const handleDelete = async () => {
+    Alert.alert('Delete Review', 'Are you sure you want to remove your rating?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Delete', 
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await api.delete(`/delivery-reviews/${initialData._id}`);
+            Alert.alert('Success', 'Review deleted');
+            if (onSuccess) onSuccess();
+            onClose();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete review');
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+    ]);
+  };
+
   return (
     <Modal visible={isVisible} transparent animationType="slide">
       <View className="flex-1 justify-end bg-black/60">
         <View className="bg-white rounded-t-[40px] p-8 pb-12">
           <View className="flex-row justify-between items-center mb-8">
-            <View>
-              <Text className="text-2xl font-black text-secondary">Rate your Delivery</Text>
+            <View className="flex-1">
+              <Text className="text-2xl font-black text-secondary">{initialData ? 'Edit your Rating' : 'Rate your Delivery'}</Text>
               <Text className="text-gray-400 text-xs mt-1">How was your experience with {driverName || 'your driver'}?</Text>
             </View>
-            <TouchableOpacity onPress={onClose} className="w-12 h-12 bg-gray-50 rounded-full items-center justify-center border border-gray-100">
-              <X size={20} color="#64748b" />
-            </TouchableOpacity>
+            <View className="flex-row space-x-3">
+              {initialData && (
+                <TouchableOpacity onPress={handleDelete} className="w-12 h-12 bg-red-50 rounded-full items-center justify-center border border-red-100">
+                  <Trash2 size={20} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={onClose} className="w-12 h-12 bg-gray-50 rounded-full items-center justify-center border border-gray-100">
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View className="items-center mb-10">
@@ -90,7 +133,7 @@ const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName
           <TouchableOpacity 
             onPress={handleSubmit}
             disabled={loading}
-            className="bg-green-500 p-5 rounded-[24px] shadow-xl shadow-green-200 items-center flex-row justify-center"
+            className={`${initialData ? 'bg-secondary' : 'bg-green-500'} p-5 rounded-[24px] shadow-xl items-center flex-row justify-center`}
             activeOpacity={0.8}
           >
             {loading ? (
@@ -98,7 +141,7 @@ const DeliveryReviewModal = ({ isVisible, onClose, orderId, driverId, driverName
             ) : (
               <>
                 <CheckCircle size={20} color="white" className="mr-2" />
-                <Text className="text-white font-bold text-lg ml-2">Submit Road Rating</Text>
+                <Text className="text-white font-bold text-lg ml-2">{initialData ? 'Update Rating' : 'Submit Road Rating'}</Text>
               </>
             )}
           </TouchableOpacity>

@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Restaurant = require('../models/Restaurant');
 const Withdrawal = require('../models/Withdrawal');
+const DeliveryReview = require('../models/DeliveryReview');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -52,8 +53,22 @@ const addOrderItems = async (req, res, next) => {
 // @access  Private
 const getMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).populate('deliveryPerson', 'name profileImage').sort({ createdAt: -1 });
-    res.json(orders);
+    const orders = await Order.find({ user: req.user._id })
+      .populate('deliveryPerson', 'name profileImage')
+      .sort({ createdAt: -1 });
+
+    // Check for reviews for these orders
+    const reviews = await DeliveryReview.find({ user: req.user._id });
+    
+    const ordersWithReviews = orders.map(order => {
+      const review = reviews.find(r => r.order.toString() === order._id.toString());
+      return {
+        ...order._doc,
+        deliveryReview: review || null
+      };
+    });
+
+    res.json(ordersWithReviews);
   } catch (error) {
     next(error);
   }

@@ -2,6 +2,8 @@ const express = require('express');
 const {
   createDeliveryReview,
   getDriverReviews,
+  updateDeliveryReview,
+  deleteDeliveryReview,
 } = require('../controllers/deliveryReviewController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,5 +21,7 @@ const deliveryOnly = (req, res, next) => {
 
 router.post('/', protect, createDeliveryReview);
 router.get('/driver', protect, deliveryOnly, getDriverReviews);
+router.put('/:id', protect, updateDeliveryReview);
+router.delete('/:id', protect, deleteDeliveryReview);
 
 module.exports = router;

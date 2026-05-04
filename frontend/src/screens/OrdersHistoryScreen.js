@@ -130,11 +130,13 @@ const OrdersHistoryScreen = ({ navigation }) => {
                 setSelectedOrder(item.orders?.find(o => o.deliveryPerson) || item);
                 setIsReviewVisible(true);
               }}
-              className="flex-row items-center bg-green-500/10 px-4 py-2 rounded-xl"
+              className={`flex-row items-center px-4 py-2 rounded-xl ${item.deliveryReview ? 'bg-green-500' : 'bg-green-500/10'}`}
               activeOpacity={0.6}
             >
-              <Star size={14} color="#22c55e" fill="#22c55e" />
-              <Text className="text-green-600 font-bold text-xs ml-1.5">Rate Order</Text>
+              <Star size={14} color={item.deliveryReview ? "white" : "#22c55e"} fill={item.deliveryReview ? "white" : "#22c55e"} />
+              <Text className={`font-bold text-xs ml-1.5 ${item.deliveryReview ? 'text-white' : 'text-green-600'}`}>
+                {item.deliveryReview ? 'Rated' : 'Rate Order'}
+              </Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity 
@@ -176,7 +178,8 @@ const OrdersHistoryScreen = ({ navigation }) => {
         orderId={selectedOrder?.mainOrderId || selectedOrder?._id}
         driverId={selectedOrder?.deliveryPerson?._id}
         driverName={selectedOrder?.deliveryPerson?.name}
-        onSucess={fetchOrders}
+        onSuccess={fetchOrders}
+        initialData={selectedOrder?.deliveryReview}
       />
     </SafeAreaView>
   );

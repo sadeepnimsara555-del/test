@@ -63,7 +63,60 @@ const getDriverReviews = async (req, res, next) => {
   }
 };
 
+// @desc    Update delivery review
+// @route   PUT /api/delivery-reviews/:id
+// @access  Private (Customer)
+const updateDeliveryReview = async (req, res, next) => {
+  try {
+    const review = await DeliveryReview.findById(req.params.id);
+
+    if (!review) {
+      res.status(404);
+      throw new Error('Review not found');
+    }
+
+    if (review.user.toString() !== req.user._id.toString()) {
+      res.status(401);
+      throw new Error('Not authorized to update this review');
+    }
+
+    review.rating = req.body.rating || review.rating;
+    review.comment = req.body.comment || review.comment;
+
+    const updatedReview = await review.save();
+    res.json(updatedReview);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete delivery review
+// @route   DELETE /api/delivery-reviews/:id
+// @access  Private (Customer)
+const deleteDeliveryReview = async (req, res, next) => {
+  try {
+    const review = await DeliveryReview.findById(req.params.id);
+
+    if (!review) {
+      res.status(404);
+      throw new Error('Review not found');
+    }
+
+    if (review.user.toString() !== req.user._id.toString()) {
+      res.status(401);
+      throw new Error('Not authorized to delete this review');
+    }
+
+    await DeliveryReview.deleteOne({ _id: req.params.id });
+    res.json({ message: 'Review removed' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDeliveryReview,
   getDriverReviews,
+  updateDeliveryReview,
+  deleteDeliveryReview,
 };
