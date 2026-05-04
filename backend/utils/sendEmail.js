@@ -7,8 +7,11 @@ if (dns.setDefaultResultOrder) {
 }
 
 const sendEmail = async (options) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️  Email not sent: EMAIL_USER or EMAIL_PASS is missing in .env');
+  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+
+  if (!emailUser || !emailPass) {
+    console.warn('⚠️  Email not sent: EMAIL_USER/SMTP_USER or EMAIL_PASS/SMTP_PASS is missing in environment variables');
     return;
   }
 
@@ -19,8 +22,8 @@ const sendEmail = async (options) => {
     port: process.env.SMTP_PORT || 587,
     secure: process.env.SMTP_PORT == 465, // true only for 465
     auth: {
-      user: process.env.EMAIL_USER || process.env.SMTP_USER,
-      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
+      user: emailUser,
+      pass: emailPass,
     },
     tls: {
       rejectUnauthorized: false,
@@ -38,7 +41,7 @@ const sendEmail = async (options) => {
   }
 
   const mailOptions = {
-    from: `🍽️ Foodie App <${process.env.EMAIL_USER}>`,
+    from: `🍽️ Foodie App <${emailUser}>`,
     to: options.email,
     subject: options.subject,
     html: options.html,
