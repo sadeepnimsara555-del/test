@@ -1,11 +1,12 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, Modal, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, User, Mail, Phone, MapPin, ShieldAlert, Trash2, CheckCircle, X, Camera } from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Phone, MapPin, ShieldAlert, Trash2, CheckCircle, X, Camera, Globe } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import api, { API_URL } from '../services/api';
 import * as SecureStore from 'expo-secure-store';
+import { getCurrentAddress } from '../utils/mapUtils';
 
 const MyAccountScreen = ({ navigation }) => {
   const { user, updateProfile, logout } = useContext(AuthContext);
@@ -24,6 +25,7 @@ const MyAccountScreen = ({ navigation }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -109,6 +111,18 @@ const MyAccountScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTagLocation = async () => {
+    setLocationLoading(true);
+    try {
+      const addr = await getCurrentAddress();
+      if (addr) setAddress(addr);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Could not fetch location');
+    } finally {
+      setLocationLoading(false);
     }
   };
 
@@ -215,16 +229,29 @@ const MyAccountScreen = ({ navigation }) => {
 
             <View>
               <Text className="text-gray-400 mb-2 ml-1 text-xs font-bold uppercase tracking-widest">Delivery Address</Text>
-              <View className="bg-gray-50 flex-row items-start p-4 rounded-2xl border border-gray-100">
-                <MapPin size={18} color="#64748b" className="mt-1" />
+              <View className="bg-gray-50 p-2 rounded-2xl border border-gray-100 flex-row items-start">
+                <View className="p-2 mt-1">
+                  <MapPin size={18} color="#64748b" />
+                </View>
                 <TextInput 
-                  className="flex-1 ml-3 text-secondary h-20"
+                  className="flex-1 ml-1 text-secondary h-20 pt-2"
                   value={address}
                   onChangeText={setAddress}
                   placeholder="123 Street, City"
                   multiline
                   textAlignVertical="top"
                 />
+                <TouchableOpacity 
+                  onPress={handleTagLocation}
+                  disabled={locationLoading}
+                  className="bg-primary/10 p-3 rounded-xl ml-2 mt-2"
+                >
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color="#ff5a5f" />
+                  ) : (
+                    <Globe size={20} color="#ff5a5f" />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
 

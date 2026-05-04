@@ -1,8 +1,10 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch, Linking } from 'react-native';
-import { Check, Eye, EyeOff } from 'lucide-react-native';
+import { Check, Eye, EyeOff, Globe } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getCurrentAddress } from '../utils/mapUtils';
+import { ActivityIndicator } from 'react-native';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -16,6 +18,7 @@ const RegisterScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState({});
+  const [locationLoading, setLocationLoading] = useState(false);
   
   const { register } = useContext(AuthContext);
 
@@ -55,6 +58,18 @@ const RegisterScreen = ({ navigation }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleTagLocation = async () => {
+    setLocationLoading(true);
+    try {
+      const addr = await getCurrentAddress();
+      if (addr) setAddress(addr);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Could not fetch location');
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -155,13 +170,26 @@ const RegisterScreen = ({ navigation }) => {
 
           <View>
             <Text className="text-gray-600 mb-1 ml-1 text-xs font-bold uppercase">Address</Text>
-            <TextInput
-              className={`bg-gray-100 p-4 rounded-2xl border ${errors.address ? 'border-red-500' : 'border-transparent'}`}
-              placeholder="123 Street Name, City"
-              value={address}
-              onChangeText={(t) => { setAddress(t); if(errors.address) setErrors({...errors, address: null}); }}
-              multiline
-            />
+            <View className={`bg-gray-100 p-2 rounded-2xl border flex-row items-center ${errors.address ? 'border-red-500' : 'border-transparent'}`}>
+              <TextInput
+                className="flex-1 p-2 text-secondary"
+                placeholder="123 Street Name, City"
+                value={address}
+                onChangeText={(t) => { setAddress(t); if(errors.address) setErrors({...errors, address: null}); }}
+                multiline
+              />
+              <TouchableOpacity 
+                onPress={handleTagLocation}
+                disabled={locationLoading}
+                className="bg-primary/10 p-3 rounded-xl ml-2"
+              >
+                {locationLoading ? (
+                  <ActivityIndicator size="small" color="#ff5a5f" />
+                ) : (
+                  <Globe size={20} color="#ff5a5f" />
+                )}
+              </TouchableOpacity>
+            </View>
             {errors.address && <Text className="text-red-500 text-xs mt-1 ml-2">{errors.address}</Text>}
           </View>
 
