@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CreditCard, Plus, Trash2, CheckCircle, Globe } from 'lucide-react-native';
+import { ArrowLeft, CreditCard, Plus, Trash2, CheckCircle, Globe, Edit2 } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { formatCardNumber, formatExpiry, validateCardDetails } from '../utils/cardUtils';
@@ -17,6 +17,7 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [paypalEmail, setPaypalEmail] = useState('');
+  const [selectedMethodIndex, setSelectedMethodIndex] = useState(null); // null means adding new
 
   const handleAddMethod = async () => {
     if (methodType === 'card') {
@@ -34,24 +35,32 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const newMethod = {
+      const methodData = {
         type: methodType,
         details: methodType === 'card' 
           ? { cardNumber, expiry, cvv } 
           : { email: paypalEmail },
-        isDefault: (user.withdrawalMethods || []).length === 0
+        isDefault: selectedMethodIndex !== null 
+          ? user.withdrawalMethods[selectedMethodIndex].isDefault 
+          : (user.withdrawalMethods || []).length === 0
       };
 
-      const updatedMethods = [...(user.withdrawalMethods || []), newMethod];
+      let updatedMethods;
+      if (selectedMethodIndex !== null) {
+        // Edit existing
+        updatedMethods = [...user.withdrawalMethods];
+        updatedMethods[selectedMethodIndex] = methodData;
+      } else {
+        // Add new
+        updatedMethods = [...(user.withdrawalMethods || []), methodData];
+      }
+
       const result = await updateProfile({ withdrawalMethods: updatedMethods });
 
       if (result.success) {
         setIsModalOpen(false);
-        setCardNumber('');
-        setExpiry('');
-        setCvv('');
-        setPaypalEmail('');
-        Alert.alert('Success', 'Withdrawal method added!');
+        resetForm();
+        Alert.alert('Success', selectedMethodIndex !== null ? 'Method updated!' : 'Withdrawal method added!');
       } else {
         Alert.alert('Error', result.message);
       }
@@ -60,6 +69,28 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setCardNumber('');
+    setExpiry('');
+    setCvv('');
+    setPaypalEmail('');
+    setSelectedMethodIndex(null);
+  };
+
+  const editMethod = (index) => {
+    const method = user.withdrawalMethods[index];
+    setMethodType(method.type);
+    if (method.type === 'card') {
+      setCardNumber(method.details.cardNumber);
+      setExpiry(method.details.expiry);
+      setCvv(method.details.cvv);
+    } else {
+      setPaypalEmail(method.details.email);
+    }
+    setSelectedMethodIndex(index);
+    setIsModalOpen(true);
   };
 
   const deleteMethod = async (index) => {
@@ -98,19 +129,21 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
                 <Text className="text-secondary font-bold text-base">
                   {method.type === 'card' ? `Card Ending in ${method.details.cardNumber.slice(-4)}` : 'PayPal'}
                 </Text>
-                <Text className="text-gray-400 text-xs">
-                  {method.type === 'card' ? `Expires ${method.details.expiry}` : method.details.email}
-                </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={() => deleteMethod(index)}>
-              <Trash2 size={20} color="#ff4757" />
-            </TouchableOpacity>
+            <View className="flex-row items-center space-x-3">
+              <TouchableOpacity onPress={() => editMethod(index)} className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center">
+                <Edit2 size={18} color="#3b82f6" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => deleteMethod(index)} className="w-10 h-10 bg-red-50 rounded-full items-center justify-center">
+                <Trash2 size={18} color="#ff4757" />
+              </TouchableOpacity>
+            </View>
           </View>
         ))}
 
         <TouchableOpacity 
-          onPress={() => setIsModalOpen(true)}
+          onPress={() => { resetForm(); setIsModalOpen(true); }}
           className="bg-primary/10 p-6 rounded-[32px] border border-dashed border-primary/30 flex-row items-center justify-center mt-4"
         >
           <Plus size={24} color="#ff5a5f" />
@@ -129,7 +162,7 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white rounded-t-[40px] p-8 pb-12">
             <View className="flex-row justify-between items-center mb-8">
-              <Text className="text-2xl font-bold text-secondary">New Method</Text>
+              <Text className="text-2xl font-bold text-secondary">{selectedMethodIndex !== null ? 'Edit Method' : 'New Method'}</Text>
               <TouchableOpacity onPress={() => setIsModalOpen(false)}>
                 <Text className="text-gray-400 font-bold">Cancel</Text>
               </TouchableOpacity>
@@ -195,7 +228,7 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
               disabled={loading}
               className="bg-primary p-5 rounded-3xl items-center shadow-lg shadow-primary/30 mt-8"
             >
-              {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Save Method</Text>}
+              {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">{selectedMethodIndex !== null ? 'Update Method' : 'Save Method'}</Text>}
             </TouchableOpacity>
           </View>
         </View>
