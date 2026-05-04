@@ -14,27 +14,27 @@ const sendEmail = async (options) => {
 
   let smtpHost = 'smtp.gmail.com';
   try {
-    // Manually resolve the hostname to an IPv4 address to bypass environment issues
-    const lookup = await require('dns').promises.lookup('smtp.gmail.com', { family: 4 });
-    smtpHost = lookup.address;
-    console.log(`📡 Resolved smtp.gmail.com to IPv4: ${smtpHost}`);
+    // Resolve to IPv4 list and pick the first one
+    const addresses = await require('dns').promises.resolve4('smtp.gmail.com');
+    smtpHost = addresses[0];
+    console.log(`📡 [v3-${new Date().toLocaleTimeString()}] Resolved smtp.gmail.com to IPv4: ${smtpHost}`);
   } catch (dnsErr) {
-    console.warn('⚠️ DNS Lookup failed, falling back to hostname:', dnsErr.message);
+    console.warn('⚠️ DNS Resolve failed, using hostname:', dnsErr.message);
   }
 
-  console.log(`📡 Attempting to send email to ${options.email} via ${smtpHost}:465`);
+  console.log(`📡 [v3] Attempting email via ${smtpHost}:587`);
   
   const transporter = nodemailer.createTransport({
     host: smtpHost,
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false, // Port 587 uses STARTTLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
     tls: {
       rejectUnauthorized: false,
-      servername: 'smtp.gmail.com', // Required when connecting via IP address
+      servername: 'smtp.gmail.com',
     },
   });
 
