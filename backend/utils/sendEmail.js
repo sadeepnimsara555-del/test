@@ -12,10 +12,20 @@ const sendEmail = async (options) => {
     return;
   }
 
-  console.log(`📡 Attempting to send email to ${options.email} via smtp.gmail.com:465 (Forcing IPv4)`);
+  let smtpHost = 'smtp.gmail.com';
+  try {
+    // Manually resolve the hostname to an IPv4 address to bypass environment issues
+    const lookup = await require('dns').promises.lookup('smtp.gmail.com', { family: 4 });
+    smtpHost = lookup.address;
+    console.log(`📡 Resolved smtp.gmail.com to IPv4: ${smtpHost}`);
+  } catch (dnsErr) {
+    console.warn('⚠️ DNS Lookup failed, falling back to hostname:', dnsErr.message);
+  }
+
+  console.log(`📡 Attempting to send email to ${options.email} via ${smtpHost}:465`);
   
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: smtpHost,
     port: 465,
     secure: true,
     auth: {
@@ -24,11 +34,7 @@ const sendEmail = async (options) => {
     },
     tls: {
       rejectUnauthorized: false,
-    },
-    // This is the "Deep Research" fix: Overriding the DNS lookup 
-    // to ensure it ONLY ever picks an IPv4 address.
-    lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, { family: 4 }, callback);
+      servername: 'smtp.gmail.com', // Required when connecting via IP address
     },
   });
 
