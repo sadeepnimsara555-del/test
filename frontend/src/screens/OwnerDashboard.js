@@ -983,11 +983,12 @@ const OwnerDashboard = ({ navigation, route }) => {
                    <View>
                       <Text className="text-gray-500 mb-1 ml-1 text-xs font-bold uppercase">Contact Number</Text>
                       <TextInput
-                        className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary"
+                        className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary font-bold"
                         value={resForm.contactNumber}
                         onChangeText={(t) => setResForm({...resForm, contactNumber: t})}
                         placeholder="0712345678"
                         keyboardType="phone-pad"
+                        maxLength={10}
                       />
                    </View>
 

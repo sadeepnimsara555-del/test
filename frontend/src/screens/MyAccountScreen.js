@@ -208,6 +208,7 @@ const MyAccountScreen = ({ navigation }) => {
                   onChangeText={setPhone}
                   placeholder="0712345678"
                   keyboardType="phone-pad"
+                  maxLength={10}
                 />
               </View>
             </View>
