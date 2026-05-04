@@ -12,6 +12,8 @@ const sendEmail = async (options) => {
     return;
   }
 
+  console.log(`📡 Attempting to send email to ${options.email} via smtp.gmail.com:465 (Forcing IPv4)`);
+  
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -23,7 +25,11 @@ const sendEmail = async (options) => {
     tls: {
       rejectUnauthorized: false,
     },
-    family: 4, // Force IPv4 to avoid ENETUNREACH on Railway
+    // This is the "Deep Research" fix: Overriding the DNS lookup 
+    // to ensure it ONLY ever picks an IPv4 address.
+    lookup: (hostname, options, callback) => {
+      dns.lookup(hostname, { family: 4 }, callback);
+    },
   });
 
   // Verify connection configuration
