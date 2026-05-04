@@ -8,6 +8,7 @@ import api from '../services/api';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { openExternalMap } from '../utils/mapUtils';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const DeliveryDashboard = ({ navigation, route }) => {
   const { activeTab: propTab } = route.params || {};
@@ -113,6 +114,22 @@ const DeliveryDashboard = ({ navigation, route }) => {
 
     setWithdrawLoading(true);
     try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify identity to withdraw funds',
+          fallbackLabel: 'Use Passcode',
+        });
+        
+        if (!authResult.success) {
+          Alert.alert('Authentication Required', 'Please verify your identity to proceed with withdrawal.');
+          setWithdrawLoading(false);
+          return;
+        }
+      }
+
       // Actually call the backend now
       await api.post('/delivery/withdraw', { 
         amount: amt, 
@@ -152,7 +169,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
           <Text className="font-bold text-secondary text-lg">Order #{order._id.substring(0, 8)}</Text>
           <Text className="text-gray-400 text-xs mt-1">{new Date(order.createdAt).toLocaleTimeString()}</Text>
         </View>
-        <Text className="text-primary font-black text-xl">Rs. {order.totalAmount ?? '0'}</Text>
+        <Text className="text-primary font-black text-xl" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {order.totalAmount ?? '0'}</Text>
       </View>
 
       <View className="bg-gray-50 p-4 rounded-3xl mb-5">
@@ -423,7 +440,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                    <View className="flex-row justify-between items-start mb-6">
                       <View>
                         <Text className="text-white/60 text-[10px] font-bold uppercase tracking-[2px] mb-1">Available Balance</Text>
-                        <Text className="text-4xl font-black text-white">Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text>
+                        <Text className="text-4xl font-black text-white" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(stats.totalEarnings || 0).toFixed(2)}</Text>
                       </View>
                       <View className="flex-row space-x-2">
                         <TouchableOpacity onPress={() => setIsFullLogsModalVisible(true)} className="bg-white/10 p-3 rounded-2xl">
@@ -465,7 +482,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                       <View>
                         <Text className="text-[8px] text-gray-400 font-bold uppercase">Pending</Text>
-                        <Text className="text-secondary font-black text-sm">Rs. {(stats.pendingEarnings || 0).toFixed(2)}</Text>
+                        <Text className="text-secondary font-black text-sm" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(stats.pendingEarnings || 0).toFixed(2)}</Text>
                       </View>
                    </View>
                    {stats.totalEarnings < 1000 && (
@@ -475,7 +492,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                         </View>
                         <View>
                           <Text className="text-[8px] text-gray-400 font-bold uppercase">To Unlock</Text>
-                          <Text className="text-secondary font-black text-sm">Rs. {(1000 - (stats.totalEarnings || 0)).toFixed(2)}</Text>
+                          <Text className="text-secondary font-black text-sm" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(1000 - (stats.totalEarnings || 0)).toFixed(2)}</Text>
                         </View>
                      </View>
                    )}
@@ -499,8 +516,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className={`font-black size-xl ${order.deliveryFeeStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
-                        +Rs. {(order.deliveryFee || 0).toFixed(2)}
+                      <Text className={`font-black size-xl ${order.deliveryFeeStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`} numberOfLines={1} adjustsFontSizeToFit>
+                        +Rs.{"\u200B"} {(order.deliveryFee || 0).toFixed(2)}
                       </Text>
                       <View className={`px-2 py-1 rounded-lg mt-1 ${order.deliveryFeeStatus === 'paid' ? 'bg-emerald-50' : 'bg-orange-50'}`}>
                         <Text className={`text-[8px] font-bold uppercase ${order.deliveryFeeStatus === 'paid' ? 'text-emerald-600' : 'text-orange-600'}`}>
@@ -593,7 +610,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
 
                 <View className="bg-gray-50 p-6 rounded-[32px] mb-8 border border-gray-100">
-                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2">Wallet Balance: Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text>
+                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2" numberOfLines={1} adjustsFontSizeToFit>Wallet Balance: Rs.{"\u200B"} {(stats.totalEarnings || 0).toFixed(2)}</Text>
                   <View className="flex-row items-center justify-center bg-white p-4 rounded-2xl border border-gray-100">
                     <DollarSign size={24} color="#059669" />
                     <TextInput 
@@ -652,7 +669,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
                 <Text className="text-3xl font-black text-secondary text-center mb-4">Payout Successful!</Text>
                 <Text className="text-gray-500 text-center mb-10 leading-6 px-10">
-                  Your withdrawal of <Text className="font-bold text-emerald-600">Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
+                  Your withdrawal of <Text className="font-bold text-emerald-600">Rs.{"\u200B"} {(stats.totalEarnings || 0).toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
                 </Text>
                 <TouchableOpacity 
                   onPress={() => {
@@ -699,7 +716,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className="font-black text-red-500 text-lg">-Rs. {(w.amount || 0).toFixed(2)}</Text>
+                      <Text className="font-black text-red-500 text-lg" numberOfLines={1} adjustsFontSizeToFit>-Rs.{"\u200B"} {(w.amount || 0).toFixed(2)}</Text>
                       <Text className="text-emerald-600 text-[8px] font-bold uppercase bg-emerald-50 px-2 py-1 rounded-md mt-1">Success</Text>
                     </View>
                   </View>
@@ -746,8 +763,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className="font-black size-xl text-gray-300">
-                        +Rs. {(order.deliveryFee || 0).toFixed(2)}
+                      <Text className="font-black size-xl text-gray-300" numberOfLines={1} adjustsFontSizeToFit>
+                        +Rs.{"\u200B"} {(order.deliveryFee || 0).toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -816,7 +833,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 <View className="bg-secondary p-6 rounded-[32px] flex-row justify-between items-center">
                   <View>
                     <Text className="text-white/60 text-[10px] font-bold uppercase">Your Earnings</Text>
-                    <Text className="text-2xl font-black text-white">Rs. {(selectedOrderForDetails.deliveryFee || 0).toFixed(2)}</Text>
+                    <Text className="text-2xl font-black text-white" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(selectedOrderForDetails.deliveryFee || 0).toFixed(2)}</Text>
                   </View>
                   <View className={`px-4 py-2 rounded-2xl ${selectedOrderForDetails.deliveryFeeStatus === 'paid' ? 'bg-emerald-500' : 'bg-orange-500'}`}>
                     <Text className="text-white font-black text-[10px] uppercase">{selectedOrderForDetails.deliveryFeeStatus === 'paid' ? 'Received' : 'Pending'}</Text>

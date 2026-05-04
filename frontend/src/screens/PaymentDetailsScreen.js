@@ -6,6 +6,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { formatCardNumber, formatExpiry, validateCardDetails } from '../utils/cardUtils';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const PaymentDetailsScreen = ({ route, navigation }) => {
   const { amount, provider, address, orderType, savedMethod } = route.params;
@@ -38,6 +39,22 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
 
     setLoading(true);
     try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify identity to confirm payment',
+          fallbackLabel: 'Use Passcode',
+        });
+        
+        if (!authResult.success) {
+          Alert.alert('Authentication Required', 'Please verify your identity to process the payment.');
+          setLoading(false);
+          return;
+        }
+      }
+
       // 1. Save method to profile if it's new
       if (!savedMethod) {
         const newMethod = {
@@ -83,7 +100,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
             price: Number(item.price),
             quantity: Number(item.quantity)
           })),
-          totalAmount: Number((resSubtotal + 2.50).toFixed(2)),
+          totalAmount: Number((resSubtotal + 400).toFixed(2)),
           orderType,
           deliveryAddress: orderType === 'delivery' ? address : '',
           paymentMethod: 'online',
@@ -122,7 +139,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
              </View>
              <View className="flex-row justify-between">
                <Text className="text-gray-400 font-bold text-xs uppercase">Total Charged</Text>
-               <Text className="text-emerald-600 font-black text-base">Rs. {(amount || 0).toFixed(2)}</Text>
+               <Text className="text-emerald-600 font-black text-base" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(amount || 0).toFixed(2)}</Text>
              </View>
            </View>
 
@@ -151,7 +168,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
           <View className="flex-row justify-between items-center mb-8">
             <View>
               <Text className="text-gray-400 text-xs uppercase font-bold tracking-widest">Total Amount</Text>
-              <Text className="text-3xl font-black text-secondary mt-1">Rs. {(amount || 0).toFixed(2)}</Text>
+              <Text className="text-3xl font-black text-secondary mt-1" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(amount || 0).toFixed(2)}</Text>
             </View>
             <View className="bg-primary/10 p-4 rounded-2xl">
               <CreditCard size={32} color="#ff5a5f" />

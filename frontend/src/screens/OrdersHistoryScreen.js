@@ -123,7 +123,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
                 </View>
               </View>
             </View>
-            <Text className="text-primary font-black text-xl">Rs. {(item.totalAmount || 0).toFixed(2)}</Text>
+            <Text className="text-primary font-black text-xl" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(item.totalAmount || 0).toFixed(2)}</Text>
           </View>
         </TouchableOpacity>
 
@@ -165,7 +165,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <View className="px-6 py-6 bg-white border-b border-gray-100">
-        <Text className="text-3xl font-bold text-secondary">My Orders (DEBUG)</Text>
+        <Text className="text-3xl font-bold text-secondary">My Orders</Text>
       </View>
 
       <FlatList

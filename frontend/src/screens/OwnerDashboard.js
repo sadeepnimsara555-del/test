@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Plus, Store, Utensils, Clipboard, Settings, Edit2, Tr
 
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -303,6 +304,21 @@ const OwnerDashboard = ({ navigation, route }) => {
 
   const handlePayDriver = async (orderId) => {
     try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify identity to pay driver',
+          fallbackLabel: 'Use Passcode',
+        });
+        
+        if (!authResult.success) {
+          Alert.alert('Authentication Required', 'Please verify your identity to pay the driver.');
+          return;
+        }
+      }
+
       await api.put(`/orders/${orderId}/pay-driver`);
       Alert.alert('Success', 'Payment sent to driver!');
       fetchData();
@@ -363,10 +379,6 @@ const OwnerDashboard = ({ navigation, route }) => {
       Alert.alert('Error', 'Insufficient balance');
       return;
     }
-    if (Number(withdrawAmount) > stats.totalEarnings) {
-      Alert.alert('Error', 'Insufficient balance');
-      return;
-    }
     if (!selectedMethod) {
       Alert.alert('Error', 'Please select a payment method');
       return;
@@ -379,6 +391,23 @@ const OwnerDashboard = ({ navigation, route }) => {
 
     try {
       setWithdrawLoading(true);
+
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify identity to withdraw funds',
+          fallbackLabel: 'Use Passcode',
+        });
+        
+        if (!authResult.success) {
+          Alert.alert('Authentication Required', 'Please verify your identity to proceed with withdrawal.');
+          setWithdrawLoading(false);
+          return;
+        }
+      }
+
       await api.post('/orders/restaurant-withdraw', {
         amount: Number(withdrawAmount),
         method: selectedMethod,
@@ -621,7 +650,7 @@ const OwnerDashboard = ({ navigation, route }) => {
             <Text className="text-gray-400 text-xs">{new Date(item.createdAt).toLocaleTimeString()}</Text>
           </View>
         </View>
-        <Text className="font-bold text-primary">Rs. {(item.totalAmount || 0).toFixed(2)}</Text>
+        <Text className="font-bold text-primary" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(item.totalAmount || 0).toFixed(2)}</Text>
       </View>
       
       <View className="bg-gray-50 p-4 rounded-2xl mb-4">
@@ -712,7 +741,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           </View>
         </View>
         <View className="flex-row justify-between items-end">
-          <Text className="text-primary font-bold text-lg">Rs. {item.price ?? '0'}</Text>
+          <Text className="text-primary font-bold text-lg" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {item.price ?? '0'}</Text>
           <View className="flex-row items-center">
             <Star size={12} color="#ffb800" fill="#ffb800" />
             <Text className="text-[10px] font-bold text-gray-400 ml-1">{item.rating || '0.0'}</Text>
@@ -766,7 +795,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           </View>
         </View>
         <Text className="font-black text-emerald-500 text-xl">
-          +Rs. {((item.deliveryFeeStatus === 'pending' ? (item.totalAmount || 0) : ((item.totalAmount || 0) - (item.deliveryFee || 0))) || 0).toFixed(2)}
+          +Rs.{"\u200B"} {(((item.deliveryFeeStatus === 'pending' ? (item.totalAmount || 0) : ((item.totalAmount || 0) - (item.deliveryFee || 0))) || 0)).toFixed(2)}
         </Text>
       </View>
 
@@ -775,7 +804,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           <View>
              <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Driver Fee</Text>
              <Text className={`font-bold text-sm ${item.deliveryFeeStatus === 'paid' ? 'text-emerald-600' : 'text-orange-500'}`}>
-                Rs. {(item.deliveryFee || 0).toFixed(2)} {item.deliveryFeeStatus === 'paid' ? '• Paid' : ''}
+                Rs.{"\u200B"} {(item.deliveryFee || 0).toFixed(2)} {item.deliveryFeeStatus === 'paid' ? '• Paid' : ''}
              </Text>
           </View>
           {item.deliveryFeeStatus === 'pending' && item.orderStatus === 'delivered' && (
@@ -865,7 +894,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                <View className="flex-row justify-between items-start mb-6">
                   <View>
                     <Text className="text-white/60 text-[10px] font-bold uppercase tracking-[2px] mb-1">Available Funds</Text>
-                    <Text className="text-4xl font-black text-white">Rs. {stats.totalEarnings.toFixed(2)}</Text>
+                    <Text className="text-4xl font-black text-white" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {stats.totalEarnings.toFixed(2)}</Text>
                   </View>
                   <View className="flex-row space-x-2">
                     <TouchableOpacity onPress={() => setIsFullLogsModalVisible(true)} className="bg-white/10 p-3 rounded-2xl">
@@ -900,7 +929,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                   </View>
                   <View>
                     <Text className="text-[8px] text-gray-400 font-bold uppercase">Lifetime</Text>
-                    <Text className="text-secondary font-black text-sm">Rs. {stats.lifetimeEarnings.toFixed(2)}</Text>
+                    <Text className="text-secondary font-black text-sm" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {stats.lifetimeEarnings.toFixed(2)}</Text>
                   </View>
                </View>
                <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
@@ -910,7 +939,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                   <View>
                     <Text className="text-[8px] text-gray-400 font-bold uppercase">Pending Fees</Text>
                     <Text className="text-secondary font-black text-sm">
-                      Rs. {stats.history.filter(o => o.deliveryFeeStatus === 'pending').reduce((sum, o) => sum + (o.deliveryFee || 0), 0).toFixed(2)}
+                      Rs.{"\u200B"} {stats.history.filter(o => o.deliveryFeeStatus === 'pending').reduce((sum, o) => sum + (o.deliveryFee || 0), 0).toFixed(2)}
                     </Text>
                   </View>
                </View>
@@ -1224,7 +1253,7 @@ const OwnerDashboard = ({ navigation, route }) => {
               <View>
                 <View className="bg-gray-50 p-8 rounded-[40px] mb-8 border border-gray-100 items-center">
                   <Text className="text-gray-400 text-[10px] font-bold uppercase mb-2">Available to Withdraw</Text>
-                  <Text className="text-4xl font-black text-emerald-600">Rs. {stats.totalEarnings.toFixed(2)}</Text>
+                  <Text className="text-4xl font-black text-emerald-600" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {stats.totalEarnings.toFixed(2)}</Text>
                 </View>
 
                 <Text className="text-gray-500 mb-3 ml-1 text-[10px] font-bold uppercase">Enter Amount to Withdraw</Text>
@@ -1286,7 +1315,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                         {w.method === 'card' ? <CreditCard size={14} color="gray" /> : <Globe size={14} color="gray" />}
                         <Text className="text-gray-400 text-[10px] font-bold uppercase ml-1">{w.method}</Text>
                       </View>
-                      <Text className="font-bold text-secondary text-lg">Rs. {w.amount.toFixed(2)}</Text>
+                      <Text className="font-bold text-secondary text-lg" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {w.amount.toFixed(2)}</Text>
                       <Text className="text-gray-400 text-[10px] mt-1">{new Date(w.createdAt).toLocaleDateString()}</Text>
                     </View>
                     <View className="bg-emerald-50 px-3 py-1 rounded-full">
@@ -1337,7 +1366,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                     </View>
                     <View className="items-end">
                       <Text className="font-black text-xl text-gray-300">
-                        +Rs. {(order.totalAmount - (order.deliveryFee || 0)).toFixed(2)}
+                        +Rs.{"\u200B"} {(order.totalAmount - (order.deliveryFee || 0)).toFixed(2)}
                       </Text>
                     </View>
                   </View>

@@ -6,6 +6,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import * as Location from 'expo-location';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const CheckoutScreen = ({ navigation }) => {
   const { cart, cartTotal, restaurantId, clearCart } = useContext(CartContext);
@@ -68,7 +69,7 @@ const CheckoutScreen = ({ navigation }) => {
 
     if (paymentMethod === 'online') {
       navigation.navigate('PaymentDetails', {
-        amount: (cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)),
+        amount: (cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 400)),
         provider: selectedSavedMethod ? selectedSavedMethod.type : onlineProvider,
         savedMethod: selectedSavedMethod,
         address,
@@ -79,6 +80,22 @@ const CheckoutScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify identity to place order',
+          fallbackLabel: 'Use Passcode',
+        });
+        
+        if (!authResult.success) {
+          Alert.alert('Authentication Required', 'Please verify your identity to place the order.');
+          setLoading(false);
+          return;
+        }
+      }
+
       // ... (existing order placement logic for Cash)
       const groupedItems = cart.reduce((acc, item) => {
         const resId = item.restaurantId?._id || item.restaurantId;
@@ -101,7 +118,7 @@ const CheckoutScreen = ({ navigation }) => {
             price: Number(item.price),
             quantity: Number(item.quantity)
           })),
-          totalAmount: Number((resSubtotal + 2.50).toFixed(2)),
+          totalAmount: Number((resSubtotal + 400).toFixed(2)),
           orderType,
           deliveryAddress: orderType === 'delivery' ? address : '',
           paymentMethod: 'cash',
@@ -263,15 +280,15 @@ const CheckoutScreen = ({ navigation }) => {
           <Text className="text-lg font-bold text-secondary mb-4">Final Summary</Text>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Items ({cart.reduce((sum, i) => sum + i.quantity, 0)})</Text>
-            <Text className="text-secondary font-bold">Rs. {(cartTotal || 0).toFixed(2)}</Text>
+            <Text className="text-secondary font-bold" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(cartTotal || 0).toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
-            <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x Rs. 2.50)</Text>
-            <Text className="text-secondary font-bold">Rs. {(new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50).toFixed(2)}</Text>
+            <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x Rs. 400)</Text>
+            <Text className="text-secondary font-bold" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {(new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 400).toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100">
             <Text className="text-lg font-bold text-secondary">Payable Amount</Text>
-            <Text className="text-xl font-bold text-primary">Rs. {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-xl font-bold text-primary" numberOfLines={1} adjustsFontSizeToFit>Rs.{"\u200B"} {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 400)).toFixed(2)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -285,7 +302,7 @@ const CheckoutScreen = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-lg">Confirm & Pay Rs. {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-white font-bold text-lg" numberOfLines={1} adjustsFontSizeToFit>Confirm & Pay Rs.{"\u200B"} {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 400)).toFixed(2)}</Text>
           )}
         </TouchableOpacity>
       </View>

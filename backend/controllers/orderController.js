@@ -23,7 +23,7 @@ const addOrderItems = async (req, res, next) => {
       res.status(400);
       throw new Error('No order items');
     } else {
-      const deliveryFee = orderType === 'delivery' ? 2.50 : 0;
+      const deliveryFee = orderType === 'delivery' ? 400 : 0;
       const deliveryFeeStatus = orderType === 'delivery' ? 'pending' : 'n/a';
 
       const order = new Order({
