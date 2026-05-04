@@ -1,0 +1,161 @@
+[
+  {
+    "_id": "69ea9ae16ae3ef573982835b",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4e6a9fb4277a9ccd82fcc",
+    "items": [
+      {
+        "menuItem": "69ea8e9f6ae3ef573982819c",
+        "name": "Pizza",
+        "price": 9,
+        "quantity": 1,
+        "_id": "69ea9ae16ae3ef573982835c"
+      },
+      {
+        "menuItem": "69ea8f286ae3ef573982819d",
+        "name": "Cookies and Creamie Milk Shake",
+        "price": 6,
+        "quantity": 1,
+        "_id": "69ea9ae16ae3ef573982835d"
+      }
+    ],
+    "totalAmount": 17.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.382,Nawala",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "placed",
+    "createdAt": "2026-04-23T22:19:13.644Z",
+    "updatedAt": "2026-04-23T22:19:13.644Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ea9ae16ae3ef5739828359",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4eabd3b67c5ed36025f7b",
+    "items": [
+      {
+        "menuItem": "69e4ffd0c04f26d45f70eb8a",
+        "name": "Spicy Ramen",
+        "price": 5,
+        "quantity": 1,
+        "_id": "69ea9ae16ae3ef573982835a"
+      }
+    ],
+    "totalAmount": 7.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.382,Nawala",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "placed",
+    "createdAt": "2026-04-23T22:19:13.474Z",
+    "updatedAt": "2026-04-23T22:19:13.474Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ea9a1e6ae3ef57398282ee",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4e6a9fb4277a9ccd82fcc",
+    "items": [
+      {
+        "menuItem": "69ea8e446ae3ef573982819b",
+        "name": "Chicken Pasta",
+        "price": 15,
+        "quantity": 1,
+        "_id": "69ea9a1e6ae3ef57398282ef"
+      },
+      {
+        "menuItem": "69ea8e9f6ae3ef573982819c",
+        "name": "Pizza",
+        "price": 9,
+        "quantity": 1,
+        "_id": "69ea9a1e6ae3ef57398282f0"
+      }
+    ],
+    "totalAmount": 26.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.396, Nagod",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "placed",
+    "createdAt": "2026-04-23T22:15:58.181Z",
+    "updatedAt": "2026-04-23T22:15:58.181Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ea9a1d6ae3ef57398282ec",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4eabd3b67c5ed36025f7b",
+    "items": [
+      {
+        "menuItem": "69e4ffd0c04f26d45f70eb8a",
+        "name": "Spicy Ramen",
+        "price": 5,
+        "quantity": 1,
+        "_id": "69ea9a1d6ae3ef57398282ed"
+      }
+    ],
+    "totalAmount": 7.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.396, Nagod",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "placed",
+    "createdAt": "2026-04-23T22:15:57.985Z",
+    "updatedAt": "2026-04-23T22:15:57.985Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ea98cf6ae3ef5739828286",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4e6a9fb4277a9ccd82fcc",
+    "items": [
+      {
+        "menuItem": "69ea8e446ae3ef573982819b",
+        "name": "Chicken Pasta",
+        "price": 15,
+        "quantity": 1,
+        "_id": "69ea98cf6ae3ef5739828287"
+      }
+    ],
+    "totalAmount": 17.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.472,Malabe",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "cancelled",
+    "createdAt": "2026-04-23T22:10:23.293Z",
+    "updatedAt": "2026-04-23T22:14:35.189Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ea98cf6ae3ef5739828283",
+    "user": "69e4dd2a59277948bd35386f",
+    "restaurant": "69e4eabd3b67c5ed36025f7b",
+    "items": [
+      {
+        "menuItem": "69e4ffd0c04f26d45f70eb8a",
+        "name": "Spicy Ramen",
+        "price": 5,
+        "quantity": 1,
+        "_id": "69ea98cf6ae3ef5739828284"
+      },
+      {
+        "menuItem": "69e5138c1ffa700bfa3109f5",
+        "name": "🍔 Burger",
+        "price": 6,
+        "quantity": 1,
+        "_id": "69ea98cf6ae3ef5739828285"
+      }
+    ],
+    "totalAmount": 13.5,
+    "orderType": "delivery",
+    "deliveryAddress": "No.472,Malabe",
+    "paymentMethod": "cash",
+    "paymentStatus": "pending",
+    "orderStatus": "placed",
+    "createdAt": "2026-04-23T22:10:23.084Z",
+    "updatedAt": "2026-04-23T22:10:23.084Z",
+    "__v": 0
+  }
+]
