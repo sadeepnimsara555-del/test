@@ -120,7 +120,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
              </View>
              <View className="flex-row justify-between">
                <Text className="text-gray-400 font-bold text-xs uppercase">Total Charged</Text>
-               <Text className="text-emerald-600 font-black text-base">${amount.toFixed(2)}</Text>
+               <Text className="text-emerald-600 font-black text-base">Rs. {amount.toFixed(2)}</Text>
              </View>
            </View>
 
@@ -149,7 +149,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
           <View className="flex-row justify-between items-center mb-8">
             <View>
               <Text className="text-gray-400 text-xs uppercase font-bold tracking-widest">Total Amount</Text>
-              <Text className="text-3xl font-black text-secondary mt-1">${amount.toFixed(2)}</Text>
+              <Text className="text-3xl font-black text-secondary mt-1">Rs. {amount.toFixed(2)}</Text>
             </View>
             <View className="bg-primary/10 p-4 rounded-2xl">
               <CreditCard size={32} color="#ff5a5f" />

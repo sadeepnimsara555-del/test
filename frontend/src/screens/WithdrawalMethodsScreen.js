@@ -115,7 +115,7 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
         <View className="mt-10 bg-blue-50 p-6 rounded-3xl border border-blue-100">
           <Text className="text-blue-800 font-bold mb-2">How it works</Text>
           <Text className="text-blue-600/70 text-xs leading-5">
-            Your earnings are held securely until you request a withdrawal. Once you reach the minimum balance of {user?.role === 'restaurant_owner' ? '$60.00' : '$20.00'}, you can transfer your funds to any of the methods saved above.
+            Your earnings are held securely until you request a withdrawal. Once you reach the minimum balance of {user?.role === 'restaurant_owner' ? 'Rs. 60.00' : 'Rs. 20.00'}, you can transfer your funds to any of the methods saved above.
           </Text>
         </View>
       </ScrollView>

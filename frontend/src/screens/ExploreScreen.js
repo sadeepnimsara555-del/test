@@ -78,7 +78,7 @@ const ExploreScreen = ({ navigation }) => {
         <Text className="text-gray-400 text-[10px] mt-1" numberOfLines={1}>{item.category}</Text>
         
         <View className="flex-row justify-between items-center mt-2">
-          <Text className="text-primary font-bold text-sm">${item.price}</Text>
+          <Text className="text-primary font-bold text-sm">Rs. {item.price}</Text>
           <View className="flex-row items-center">
             <Clock size={10} color="gray" />
             <Text className="text-gray-400 text-[10px] ml-1">{item.preparationTime}m</Text>
@@ -176,7 +176,7 @@ const ExploreScreen = ({ navigation }) => {
                 <Text className="text-white/80 text-xs">View your cart</Text>
               </View>
             </View>
-            <Text className="text-white font-bold text-lg">${cartTotal.toFixed(2)}</Text>
+            <Text className="text-white font-bold text-lg">Rs. {cartTotal.toFixed(2)}</Text>
           </TouchableOpacity>
         </View>
       )}

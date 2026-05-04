@@ -129,7 +129,7 @@ const MenuItemDetailScreen = ({ route, navigation }) => {
               </View>
               <Text className="text-3xl font-bold text-secondary">{currentItem.name}</Text>
             </View>
-            <Text className="text-3xl font-bold text-primary">${currentItem.price}</Text>
+            <Text className="text-3xl font-bold text-primary">Rs. {currentItem.price}</Text>
           </View>
 
 
@@ -216,7 +216,7 @@ const MenuItemDetailScreen = ({ route, navigation }) => {
                           <Star size={10} color="#ffb800" fill="#ffb800" />
                           <Text className="text-[10px] text-gray-400 ml-1">{rec.rating || '0.0'}</Text>
                         </View>
-                        <Text className="text-primary font-bold text-xs mt-1">${rec.price}</Text>
+                        <Text className="text-primary font-bold text-xs mt-1">Rs. {rec.price}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -264,7 +264,7 @@ const MenuItemDetailScreen = ({ route, navigation }) => {
             </View>
             <Text className="text-white font-bold text-lg">Add to Cart</Text>
           </View>
-          <Text className="text-white font-bold text-lg">${(currentItem.price * quantity).toFixed(2)}</Text>
+          <Text className="text-white font-bold text-lg">Rs. {(currentItem.price * quantity).toFixed(2)}</Text>
         </TouchableOpacity>
       </View>
 

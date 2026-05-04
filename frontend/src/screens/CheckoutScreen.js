@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Truck, ShoppingBag, CreditCard, Wallet, Home as Home
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import * as Location from 'expo-location';
 
 const CheckoutScreen = ({ navigation }) => {
   const { cart, cartTotal, restaurantId, clearCart } = useContext(CartContext);
@@ -28,6 +29,36 @@ const CheckoutScreen = ({ navigation }) => {
       setSelectedSavedMethod(user.withdrawalMethods[0]);
     }
   }, [user?.withdrawalMethods]);
+
+  const tagLocation = async () => {
+    setLoading(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (reverseGeocode.length > 0) {
+        let addressObj = reverseGeocode[0];
+        let formattedAddress = `${addressObj.name || ''}, ${addressObj.street || ''}, ${addressObj.city || ''}, ${addressObj.region || ''}, ${addressObj.country || ''}`.replace(/, ,/g, ',').replace(/^, /, '');
+        setAddress(formattedAddress);
+      } else {
+        setAddress(`${location.coords.latitude}, ${location.coords.longitude}`);
+      }
+    } catch (error) {
+      console.log('Location error', error);
+      Alert.alert('Error', 'Could not fetch your current location.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (orderType === 'delivery' && !address) {
@@ -135,6 +166,12 @@ const CheckoutScreen = ({ navigation }) => {
                 placeholder="Enter delivery address"
                 multiline
               />
+              <TouchableOpacity 
+                onPress={tagLocation}
+                className="bg-primary/10 p-2 rounded-xl ml-2"
+              >
+                <Globe size={20} color="#ff5a5f" />
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -226,15 +263,15 @@ const CheckoutScreen = ({ navigation }) => {
           <Text className="text-lg font-bold text-secondary mb-4">Final Summary</Text>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Items ({cart.reduce((sum, i) => sum + i.quantity, 0)})</Text>
-            <Text className="text-secondary font-bold">${cartTotal.toFixed(2)}</Text>
+            <Text className="text-secondary font-bold">Rs. {cartTotal.toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
-            <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x $2.50)</Text>
-            <Text className="text-secondary font-bold">${(new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50).toFixed(2)}</Text>
+            <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x Rs. 2.50)</Text>
+            <Text className="text-secondary font-bold">Rs. {(new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50).toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100">
             <Text className="text-lg font-bold text-secondary">Payable Amount</Text>
-            <Text className="text-xl font-bold text-primary">${(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-xl font-bold text-primary">Rs. {(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -248,7 +285,7 @@ const CheckoutScreen = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-lg">Confirm & Pay ${(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-white font-bold text-lg">Confirm & Pay Rs. {(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
           )}
         </TouchableOpacity>
       </View>

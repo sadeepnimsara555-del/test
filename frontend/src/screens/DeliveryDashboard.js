@@ -7,6 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import * as Location from 'expo-location';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { openExternalMap } from '../utils/mapUtils';
 
 const DeliveryDashboard = ({ navigation, route }) => {
   const { activeTab: propTab } = route.params || {};
@@ -27,15 +28,9 @@ const DeliveryDashboard = ({ navigation, route }) => {
   const [isTransactionModalVisible, setIsTransactionModalVisible] = useState(false);
   const [isFullLogsModalVisible, setIsFullLogsModalVisible] = useState(false);
 
-  // Map / Navigation States
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [mapLoading, setMapLoading] = useState(false);
-  const [driverLocation, setDriverLocation] = useState(null);
-  const [customerLocation, setCustomerLocation] = useState(null);
-  const [routeCoords, setRouteCoords] = useState([]);
-  const [customerAddressText, setCustomerAddressText] = useState('');
   const mapRef = useRef(null);
-  const [mapDestinationLabel, setMapDestinationLabel] = useState('Destination');
 
   useFocusEffect(
     useCallback(() => {
@@ -105,12 +100,12 @@ const DeliveryDashboard = ({ navigation, route }) => {
 
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 20) {
-      Alert.alert('Invalid Amount', 'Minimum withdrawal amount is $20.00');
+      Alert.alert('Invalid Amount', 'Minimum withdrawal amount is Rs. 20.00');
       return;
     }
 
     if (amt > stats.totalEarnings) {
-      Alert.alert('Insufficient Balance', `You can only withdraw up to $${stats.totalEarnings.toFixed(2)}`);
+      Alert.alert('Insufficient Balance', `You can only withdraw up to Rs. ${stats.totalEarnings.toFixed(2)}`);
       return;
     }
 
@@ -143,238 +138,10 @@ const DeliveryDashboard = ({ navigation, route }) => {
     }
   };
 
-  // Geocoding with multi-service fallback: Nominatim → Photon → stripped parts
-  const geocodeAddress = async (address) => {
-    if (!address || !address.trim()) return null;
-
-    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    // --- Nominatim fetch (OSM, rate-limited at 1 req/sec) ---
-    const nominatimFetch = async (query) => {
-      try {
-        const encoded = encodeURIComponent(query);
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`,
-          { headers: { 'User-Agent': 'DeliveryDriverApp/1.0', 'Accept': 'application/json' } }
-        );
-        const ct = res.headers.get('content-type') || '';
-        if (!ct.includes('application/json') && !ct.includes('text/json')) return null;
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return { latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) };
-        }
-      } catch (e) { /* silently skip */ }
-      return null;
-    };
-
-    // --- Photon fetch (Komoot, different OSM engine, no strict rate limit) ---
-    const photonFetch = async (query) => {
-      try {
-        const encoded = encodeURIComponent(query);
-        const res = await fetch(
-          `https://photon.komoot.io/api/?q=${encoded}&limit=1&lang=en`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-        const ct = res.headers.get('content-type') || '';
-        if (!ct.includes('application/json') && !ct.includes('text/json')) return null;
-        const data = await res.json();
-        if (data?.features?.length > 0) {
-          const [lon, lat] = data.features[0].geometry.coordinates;
-          return { latitude: lat, longitude: lon };
-        }
-      } catch (e) { /* silently skip */ }
-      return null;
-    };
-
-    const parts = address.split(',').map(p => p.trim()).filter(Boolean);
-
-    // Round 1: Try full address on Nominatim
-    let result = await nominatimFetch(address);
-    if (result) return result;
-    await delay(1200); // respect rate limit before next Nominatim call
-
-    // Round 2: Try full address on Photon (different service, more lenient)
-    result = await photonFetch(address);
-    if (result) return result;
-
-    // Round 3: Strip landmark/shop (first part) → try Photon
-    if (parts.length > 1) {
-      const stripped = parts.slice(1).join(', ');
-      result = await photonFetch(stripped);
-      if (result) return result;
-    }
-
-    // Round 4: Last 2 parts (street + city) → try Photon
-    if (parts.length > 2) {
-      const lastTwo = parts.slice(-2).join(', ');
-      result = await photonFetch(lastTwo);
-      if (result) return result;
-    }
-
-    // Round 5: Last part only (city name) → Photon
-    if (parts.length >= 1) {
-      const city = parts[parts.length - 1];
-      if (city.length > 2) {
-        result = await photonFetch(city + ', Sri Lanka');
-        if (result) return result;
-      }
-    }
-
-    // Round 6: Strip landmark → Nominatim (last resort)
-    if (parts.length > 1) {
-      await delay(1200);
-      result = await nominatimFetch(parts.slice(1).join(', '));
-      if (result) return result;
-    }
-
-    return null;
+  const handleOpenMap = (address, label) => {
+    openExternalMap(address, label);
   };
 
-  // Fetch a road route via OSRM (free, no API key needed)
-  const fetchRoute = async (origin, destination) => {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.routes && data.routes.length > 0) {
-        const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({
-          latitude: lat,
-          longitude: lng,
-        }));
-        return coords;
-      }
-      return [origin, destination];
-    } catch (e) {
-      console.log('Route fetch error', e);
-      return [origin, destination];
-    }
-  };
-
-  const openMapForDelivery = async (order) => {
-    setMapLoading(true);
-    setIsMapModalVisible(true);
-    setRouteCoords([]);
-    setDriverLocation(null);
-    setCustomerLocation(null);
-    setCustomerAddressText(order.deliveryAddress || '');
-    setMapDestinationLabel('Customer');
-
-    try {
-      // 1. Request location permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location Required',
-          'Please enable location access so we can show your position on the map.',
-          [
-            { text: 'Cancel', onPress: () => setIsMapModalVisible(false), style: 'cancel' },
-            {
-              text: 'Open Settings',
-              onPress: () => {
-                Platform.OS === 'ios'
-                  ? Linking.openURL('app-settings:')
-                  : Linking.openSettings();
-              },
-            },
-          ]
-        );
-        setMapLoading(false);
-        return;
-      }
-
-      // 2. Get current driver location
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const driverCoords = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      };
-      setDriverLocation(driverCoords);
-
-      // 3. Geocode customer delivery address (never block - gracefully degrade)
-      const custCoords = await geocodeAddress(order.deliveryAddress);
-      if (custCoords) {
-        setCustomerLocation(custCoords);
-      }
-      // If geocoding failed, map still opens showing driver location + address text banner
-
-      // 4. Fetch driving route only if geocoding succeeded
-      if (custCoords) {
-        const route = await fetchRoute(driverCoords, custCoords);
-        setRouteCoords(route);
-      }
-
-      // 5. Fit map to show both markers
-      setTimeout(() => {
-        if (mapRef.current && driverCoords && custCoords) {
-          mapRef.current.fitToCoordinates([driverCoords, custCoords], {
-            edgePadding: { top: 80, right: 50, bottom: 80, left: 50 },
-            animated: true,
-          });
-        }
-      }, 600);
-    } catch (e) {
-      console.log('Map open error', e);
-      Alert.alert('Error', 'Could not load the map. Please try again.');
-      setIsMapModalVisible(false);
-    } finally {
-      setMapLoading(false);
-    }
-  };
-
-  // Generic: open map for any address (used in available card for restaurant & customer preview)
-  const openMapToAddress = async (address, label) => {
-    setMapLoading(true);
-    setIsMapModalVisible(true);
-    setRouteCoords([]);
-    setDriverLocation(null);
-    setCustomerLocation(null);
-    setCustomerAddressText(address || '');
-    setMapDestinationLabel(label || 'Destination');
-
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location Required',
-          'Please enable location access to see the map.',
-          [
-            { text: 'Cancel', onPress: () => setIsMapModalVisible(false), style: 'cancel' },
-            {
-              text: 'Open Settings',
-              onPress: () => Platform.OS === 'ios' ? Linking.openURL('app-settings:') : Linking.openSettings(),
-            },
-          ]
-        );
-        setMapLoading(false);
-        return;
-      }
-
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const driverCoords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setDriverLocation(driverCoords);
-
-      const destCoords = await geocodeAddress(address);
-      if (destCoords) {
-        setCustomerLocation(destCoords);
-        const route = await fetchRoute(driverCoords, destCoords);
-        setRouteCoords(route);
-        setTimeout(() => {
-          if (mapRef.current) {
-            mapRef.current.fitToCoordinates([driverCoords, destCoords], {
-              edgePadding: { top: 80, right: 50, bottom: 80, left: 50 },
-              animated: true,
-            });
-          }
-        }, 600);
-      }
-    } catch (e) {
-      console.log('openMapToAddress error', e);
-      Alert.alert('Error', 'Could not load the map. Please try again.');
-      setIsMapModalVisible(false);
-    } finally {
-      setMapLoading(false);
-    }
-  };
 
   const renderAvailableCard = (order) => (
     <View key={order._id} className="bg-white p-5 rounded-[32px] mb-6 shadow-sm border border-gray-100">
@@ -383,7 +150,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
           <Text className="font-bold text-secondary text-lg">Order #{order._id.substring(0, 8)}</Text>
           <Text className="text-gray-400 text-xs mt-1">{new Date(order.createdAt).toLocaleTimeString()}</Text>
         </View>
-        <Text className="text-primary font-black text-xl">${order.totalAmount}</Text>
+        <Text className="text-primary font-black text-xl">Rs. {order.totalAmount}</Text>
       </View>
 
       <View className="bg-gray-50 p-4 rounded-3xl mb-5">
@@ -398,7 +165,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
             <Text className="text-xs text-gray-500 leading-4">{order.restaurant.address}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => openMapToAddress(order.restaurant.address, 'Restaurant')}
+            onPress={() => handleOpenMap(order.restaurant.address, 'Restaurant')}
             style={{
               backgroundColor: 'white',
               padding: 8,
@@ -429,7 +196,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
             <Text className="text-xs text-gray-500 leading-4">{order.deliveryAddress}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => openMapToAddress(order.deliveryAddress, 'Customer')}
+            onPress={() => handleOpenMap(order.deliveryAddress, 'Customer')}
             style={{
               backgroundColor: 'white',
               padding: 8,
@@ -515,8 +282,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
              <TouchableOpacity
                onPress={() =>
                  order.orderStatus === 'accepted'
-                   ? openMapToAddress(order.restaurant.address, 'Restaurant')
-                   : openMapForDelivery(order)
+                   ? handleOpenMap(order.restaurant.address, 'Restaurant')
+                   : handleOpenMap(order.deliveryAddress, 'Customer')
                }
                className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100"
              >
@@ -654,7 +421,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                    <View className="flex-row justify-between items-start mb-6">
                       <View>
                         <Text className="text-white/60 text-[10px] font-bold uppercase tracking-[2px] mb-1">Available Balance</Text>
-                        <Text className="text-4xl font-black text-white">${stats.totalEarnings.toFixed(2)}</Text>
+                        <Text className="text-4xl font-black text-white">Rs. {stats.totalEarnings.toFixed(2)}</Text>
                       </View>
                       <View className="flex-row space-x-2">
                         <TouchableOpacity onPress={() => setIsFullLogsModalVisible(true)} className="bg-white/10 p-3 rounded-2xl">
@@ -669,7 +436,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                    <TouchableOpacity 
                     onPress={() => {
                       if (stats.totalEarnings < 20) {
-                        Alert.alert('Minimum Balance Required', 'You need to earn at least $20.00 (Received) to request a withdrawal.');
+                        Alert.alert('Minimum Balance Required', 'You need to earn at least Rs. 20.00 (Received) to request a withdrawal.');
                         return;
                       }
                       if (!user.withdrawalMethods || user.withdrawalMethods.length === 0) {
@@ -696,7 +463,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                       <View>
                         <Text className="text-[8px] text-gray-400 font-bold uppercase">Pending</Text>
-                        <Text className="text-secondary font-black text-sm">${(stats.pendingEarnings || 0).toFixed(2)}</Text>
+                        <Text className="text-secondary font-black text-sm">Rs. {(stats.pendingEarnings || 0).toFixed(2)}</Text>
                       </View>
                    </View>
                    {stats.totalEarnings < 20 && (
@@ -706,7 +473,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                         </View>
                         <View>
                           <Text className="text-[8px] text-gray-400 font-bold uppercase">To Unlock</Text>
-                          <Text className="text-secondary font-black text-sm">${(20 - stats.totalEarnings).toFixed(2)}</Text>
+                          <Text className="text-secondary font-black text-sm">Rs. {(20 - stats.totalEarnings).toFixed(2)}</Text>
                         </View>
                      </View>
                    )}
@@ -724,7 +491,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                     </View>
                     <View className="items-end">
                       <Text className={`font-black size-xl ${order.deliveryFeeStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
-                        +${(order.deliveryFee || 0).toFixed(2)}
+                        +Rs. {(order.deliveryFee || 0).toFixed(2)}
                       </Text>
                       <View className={`px-2 py-1 rounded-lg mt-1 ${order.deliveryFeeStatus === 'paid' ? 'bg-emerald-50' : 'bg-orange-50'}`}>
                         <Text className={`text-[8px] font-bold uppercase ${order.deliveryFeeStatus === 'paid' ? 'text-emerald-600' : 'text-orange-600'}`}>
@@ -799,199 +566,6 @@ const DeliveryDashboard = ({ navigation, route }) => {
         )}
       </ScrollView>
 
-      {/* ───────────── Map Navigation Modal ───────────── */}
-      <Modal visible={isMapModalVisible} animationType="slide" statusBarTranslucent>
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
-          {/* Map area */}
-          {mapLoading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' }}>
-              <ActivityIndicator size="large" color="#ff5a5f" />
-              <Text style={{ marginTop: 16, color: '#666', fontSize: 14, fontWeight: '600' }}>Locating you & mapping route…</Text>
-            </View>
-          ) : (
-            <MapView
-              ref={mapRef}
-              style={{ flex: 1 }}
-              provider={PROVIDER_GOOGLE}
-              showsUserLocation={false}
-              showsMyLocationButton={false}
-              initialRegion={
-                driverLocation
-                  ? {
-                      latitude: driverLocation.latitude,
-                      longitude: driverLocation.longitude,
-                      latitudeDelta: 0.05,
-                      longitudeDelta: 0.05,
-                    }
-                  : {
-                      latitude: 7.8731,
-                      longitude: 80.7718,
-                      latitudeDelta: 2,
-                      longitudeDelta: 2,
-                    }
-              }
-            >
-              {/* Driver marker */}
-              {driverLocation && (
-                <Marker coordinate={driverLocation} title="You" description="Your current location" anchor={{ x: 0.5, y: 0.5 }}>
-                  <View style={{
-                    backgroundColor: '#4ade80',
-                    borderRadius: 24,
-                    padding: 8,
-                    borderWidth: 3,
-                    borderColor: 'white',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 6,
-                  }}>
-                    <Navigation size={18} color="white" />
-                  </View>
-                </Marker>
-              )}
-
-              {/* Customer destination marker */}
-              {customerLocation && (
-                <Marker coordinate={customerLocation} title="Customer" description={customerAddressText} anchor={{ x: 0.5, y: 1 }}>
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={{
-                      backgroundColor: '#ff5a5f',
-                      borderRadius: 24,
-                      padding: 10,
-                      borderWidth: 3,
-                      borderColor: 'white',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 4,
-                      elevation: 6,
-                    }}>
-                      <MapPin size={18} color="white" />
-                    </View>
-                    <View style={{ width: 3, height: 10, backgroundColor: '#ff5a5f' }} />
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#ff5a5f' }} />
-                  </View>
-                </Marker>
-              )}
-
-              {/* Route polyline */}
-              {routeCoords.length > 1 && (
-                <Polyline
-                  coordinates={routeCoords}
-                  strokeColor="#ff5a5f"
-                  strokeWidth={4}
-                  lineDashPattern={[0]}
-                />
-              )}
-            </MapView>
-          )}
-
-          {/* Top bar */}
-          <View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            paddingTop: Platform.OS === 'ios' ? 54 : 40,
-            paddingHorizontal: 20,
-            paddingBottom: 16,
-            backgroundColor: 'rgba(255,255,255,0.97)',
-            flexDirection: 'row',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 6,
-          }}>
-            <TouchableOpacity
-              onPress={() => setIsMapModalVisible(false)}
-              style={{
-                backgroundColor: '#f1f5f9',
-                borderRadius: 20,
-                padding: 10,
-                marginRight: 14,
-              }}
-            >
-              <X size={20} color="#334155" />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Navigating to {mapDestinationLabel}</Text>
-              <Text style={{ color: '#1e293b', fontSize: 14, fontWeight: '800' }} numberOfLines={1}>{customerAddressText}</Text>
-            </View>
-          </View>
-
-          {/* Bottom legend card - geocoding succeeded */}
-          {!mapLoading && driverLocation && customerLocation && (
-            <View style={{
-              position: 'absolute',
-              bottom: 36,
-              left: 20,
-              right: 20,
-              backgroundColor: 'white',
-              borderRadius: 28,
-              padding: 20,
-              flexDirection: 'row',
-              justifyContent: 'space-around',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-              elevation: 10,
-            }}>
-              <View style={{ alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#dcfce7', borderRadius: 12, padding: 8, marginBottom: 6 }}>
-                  <Navigation size={18} color="#16a34a" />
-                </View>
-                <Text style={{ fontSize: 10, color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>You</Text>
-                <Text style={{ fontSize: 12, color: '#1e293b', fontWeight: '700', marginTop: 2 }}>Current Location</Text>
-              </View>
-              <View style={{ width: 1, backgroundColor: '#f1f5f9' }} />
-              <View style={{ alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#fee2e2', borderRadius: 12, padding: 8, marginBottom: 6 }}>
-                  <MapPin size={18} color="#dc2626" />
-                </View>
-                <Text style={{ fontSize: 10, color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>{mapDestinationLabel}</Text>
-                <Text style={{ fontSize: 12, color: '#1e293b', fontWeight: '700', marginTop: 2 }} numberOfLines={1}>Destination</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Geocoding failed - show address text so driver can navigate manually */}
-          {!mapLoading && driverLocation && !customerLocation && (
-            <View style={{
-              position: 'absolute',
-              bottom: 36,
-              left: 20,
-              right: 20,
-              backgroundColor: 'white',
-              borderRadius: 28,
-              padding: 20,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-              elevation: 10,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}>
-                <View style={{ backgroundColor: '#fff7ed', borderRadius: 12, padding: 8, marginRight: 12 }}>
-                  <MapPin size={20} color="#f97316" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 10, color: '#f97316', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Deliver To (Navigate Manually)</Text>
-                  <Text style={{ fontSize: 14, color: '#1e293b', fontWeight: '800', lineHeight: 20 }}>{customerAddressText}</Text>
-                </View>
-              </View>
-              <View style={{ backgroundColor: '#fff7ed', borderRadius: 14, padding: 10 }}>
-                <Text style={{ fontSize: 11, color: '#c2410c', textAlign: 'center', fontWeight: '600', lineHeight: 16 }}>
-                  Your location is pinned on the map above.{'\n'}Use the address above to navigate.
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
 
       {/* Withdrawal Modal */}
       <Modal visible={isWithdrawModalVisible} animationType="slide" transparent>
@@ -1010,7 +584,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
 
                 <View className="bg-gray-50 p-6 rounded-[32px] mb-8 border border-gray-100">
-                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2">Wallet Balance: ${stats.totalEarnings.toFixed(2)}</Text>
+                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2">Wallet Balance: Rs. {stats.totalEarnings.toFixed(2)}</Text>
                   <View className="flex-row items-center justify-center bg-white p-4 rounded-2xl border border-gray-100">
                     <DollarSign size={24} color="#059669" />
                     <TextInput 
@@ -1022,7 +596,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       autoFocus
                     />
                   </View>
-                  <Text className="text-gray-400 text-[8px] text-center mt-3 font-bold uppercase">Enter amount to withdraw (Min $20.00)</Text>
+                  <Text className="text-gray-400 text-[8px] text-center mt-3 font-bold uppercase">Enter amount to withdraw (Min Rs. 20.00)</Text>
                 </View>
 
                 <Text className="font-bold text-secondary text-sm mb-4 ml-1">Select Destination</Text>
@@ -1069,7 +643,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
                 <Text className="text-3xl font-black text-secondary text-center mb-4">Payout Successful!</Text>
                 <Text className="text-gray-500 text-center mb-10 leading-6 px-10">
-                  Your withdrawal of <Text className="font-bold text-emerald-600">${stats.totalEarnings.toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
+                  Your withdrawal of <Text className="font-bold text-emerald-600">Rs. {stats.totalEarnings.toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
                 </Text>
                 <TouchableOpacity 
                   onPress={() => {
@@ -1116,7 +690,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className="font-black text-red-500 text-lg">-${w.amount.toFixed(2)}</Text>
+                      <Text className="font-black text-red-500 text-lg">-Rs. {w.amount.toFixed(2)}</Text>
                       <Text className="text-emerald-600 text-[8px] font-bold uppercase bg-emerald-50 px-2 py-1 rounded-md mt-1">Success</Text>
                     </View>
                   </View>
@@ -1164,7 +738,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                     </View>
                     <View className="items-end">
                       <Text className="font-black size-xl text-gray-300">
-                        +${(order.deliveryFee || 0).toFixed(2)}
+                        +Rs. {(order.deliveryFee || 0).toFixed(2)}
                       </Text>
                     </View>
                   </View>

@@ -40,41 +40,47 @@ const createMenuItem = async (req, res, next) => {
 
     const createdMenuItem = await menuItem.save();
 
-    // Send email notifications to opted-in users
-    console.log('📧 EMAIL_USER loaded:', process.env.EMAIL_USER ? process.env.EMAIL_USER : '❌ MISSING');
-    const optedInUsers = await User.find({ receiveEmailNotifications: true });
-    console.log(`📋 Opted-in users found: ${optedInUsers.length}`);
+    // Send email notifications to opted-in users in the background
+    (async () => {
+      try {
+        console.log('📧 EMAIL_USER loaded:', process.env.EMAIL_USER ? process.env.EMAIL_USER : '❌ MISSING');
+        const optedInUsers = await User.find({ receiveEmailNotifications: true });
+        console.log(`📋 Opted-in users found: ${optedInUsers.length}`);
 
-    if (optedInUsers.length > 0) {
-      const backendUrl = `${req.protocol}://${req.get('host')}`;
-      const redirectUrl = `${backendUrl}/api/menu/deeplink/${createdMenuItem._id}`;
+        if (optedInUsers.length > 0) {
+          const backendUrl = `${req.protocol}://${req.get('host')}`;
+          const redirectUrl = `${backendUrl}/api/menu/deeplink/${createdMenuItem._id}`;
 
-      const emailHtml = getNewFoodTemplate(
-        name, 
-        restaurant.name, 
-        category, 
-        price, 
-        description, 
-        image, 
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-        redirectUrl
-      );
+          const emailHtml = getNewFoodTemplate(
+            name, 
+            restaurant.name, 
+            category, 
+            price, 
+            description, 
+            image, 
+            process.env.FRONTEND_URL || 'http://localhost:3000',
+            redirectUrl
+          );
 
-      for (const user of optedInUsers) {
-        console.log(`📨 Sending beautiful email to: ${user.email}`);
-        try {
-          await sendEmail({
-            email: user.email,
-            subject: `✨ New Delight: ${name} is now at ${restaurant.name}!`,
-            html: emailHtml,
-          });
-        } catch (err) {
-          console.error(`❌ Email failed for ${user.email}:`, err.message);
+          for (const user of optedInUsers) {
+            console.log(`📨 Sending beautiful email to: ${user.email}`);
+            try {
+              await sendEmail({
+                email: user.email,
+                subject: `✨ New Delight: ${name} is now at ${restaurant.name}!`,
+                html: emailHtml,
+              });
+            } catch (err) {
+              console.error(`❌ Email failed for ${user.email}:`, err.message);
+            }
+          }
+        } else {
+          console.log('ℹ️ No users have email notifications enabled.');
         }
+      } catch (err) {
+        console.error('❌ Background email task failed:', err.message);
       }
-    } else {
-      console.log('ℹ️ No users have email notifications enabled.');
-    }
+    })();
 
 
     res.status(201).json(createdMenuItem);
@@ -184,23 +190,29 @@ const deleteMenuItem = async (req, res, next) => {
 
       await menuItem.deleteOne();
 
-      // Send deletion notifications to opted-in users
-      const optedInUsers = await User.find({ receiveEmailNotifications: true });
-      if (optedInUsers.length > 0) {
-        const deletionHtml = getDeletedFoodTemplate(itemName, restaurantName);
-        
-        for (const user of optedInUsers) {
-          try {
-            await sendEmail({
-              email: user.email,
-              subject: `Menu Update: Farewell to ${itemName}`,
-              html: deletionHtml,
-            });
-          } catch (err) {
-            console.error(`❌ Deletion email failed for ${user.email}:`, err.message);
+      // Send deletion notifications to opted-in users in the background
+      (async () => {
+        try {
+          const optedInUsers = await User.find({ receiveEmailNotifications: true });
+          if (optedInUsers.length > 0) {
+            const deletionHtml = getDeletedFoodTemplate(itemName, restaurantName);
+            
+            for (const user of optedInUsers) {
+              try {
+                await sendEmail({
+                  email: user.email,
+                  subject: `Menu Update: Farewell to ${itemName}`,
+                  html: deletionHtml,
+                });
+              } catch (err) {
+                console.error(`❌ Deletion email failed for ${user.email}:`, err.message);
+              }
+            }
           }
+        } catch (err) {
+          console.error('❌ Background deletion email task failed:', err.message);
         }
-      }
+      })();
 
       res.json({ message: 'Menu item removed' });
     } else {

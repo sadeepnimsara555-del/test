@@ -67,7 +67,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
             <Text className="text-gray-400 text-xs mt-1" numberOfLines={2}>{item.description}</Text>
           </View>
           <View className="flex-row justify-between items-center">
-            <Text className="text-primary font-bold text-lg">${item.price}</Text>
+            <Text className="text-primary font-bold text-lg">Rs. {item.price}</Text>
             <TouchableOpacity 
               onPress={() => addToCart(item, id)}
               className="bg-primary w-8 h-8 rounded-full items-center justify-center"
@@ -217,7 +217,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
                 <Text className="text-white/80 text-xs">View your cart</Text>
               </View>
             </View>
-            <Text className="text-white font-bold text-lg">${cartTotal.toFixed(2)}</Text>
+            <Text className="text-white font-bold text-lg">Rs. {cartTotal.toFixed(2)}</Text>
           </TouchableOpacity>
         </View>
       )}

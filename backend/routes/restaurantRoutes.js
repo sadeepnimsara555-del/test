@@ -2,6 +2,7 @@ const express = require('express');
 const {
   createRestaurant,
   getRestaurants,
+  getMyRestaurant,
   getRestaurantById,
   updateRestaurant,
   deleteRestaurant,
@@ -14,6 +15,7 @@ const upload = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 router.route('/').get(getRestaurants).post(protect, restaurantOwner, createRestaurant);
+router.get('/my', protect, getMyRestaurant);
 router.put('/:id/logo', protect, restaurantOwner, upload.single('image'), updateRestaurantLogo);
 router.put('/:id/cover', protect, restaurantOwner, upload.single('image'), updateRestaurantCoverImage);
 router

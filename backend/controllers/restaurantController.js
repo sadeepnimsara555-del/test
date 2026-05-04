@@ -71,6 +71,48 @@ const getRestaurants = async (req, res, next) => {
   }
 };
 
+// @desc    Get current user's restaurant
+// @route   GET /api/restaurants/my
+// @access  Private/Owner
+const getMyRestaurant = async (req, res, next) => {
+  try {
+    const restaurant = await Restaurant.findOne({ ownerId: req.user._id }).lean();
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    const Review = require('../models/Review');
+    const MenuItem = require('../models/MenuItem');
+    const restaurantFoodItems = await MenuItem.find({ restaurantId: restaurant._id }).select('_id');
+    const foodIds = restaurantFoodItems.map(item => item._id);
+
+    const stats = await Review.aggregate([
+      { 
+        $match: { 
+          $or: [
+            { restaurant: restaurant._id },
+            { menuItem: { $in: foodIds } }
+          ]
+        } 
+      },
+      { 
+        $group: { 
+          _id: null, 
+          avgRating: { $avg: "$rating" },
+          count: { $sum: 1 }
+        } 
+      }
+    ]);
+
+    restaurant.rating = stats.length > 0 ? Number(stats[0].avgRating.toFixed(1)) : 0;
+    restaurant.reviewCount = stats.length > 0 ? stats[0].count : 0;
+
+    res.json(restaurant);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 // @desc    Get restaurant by ID
 // @route   GET /api/restaurants/:id
@@ -240,6 +282,7 @@ const updateRestaurantCoverImage = async (req, res, next) => {
 module.exports = {
   createRestaurant,
   getRestaurants,
+  getMyRestaurant,
   getRestaurantById,
   updateRestaurant,
   deleteRestaurant,

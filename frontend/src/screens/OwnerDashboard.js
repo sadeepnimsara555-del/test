@@ -33,6 +33,7 @@ const OwnerDashboard = ({ navigation, route }) => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [stats, setStats] = useState({ history: [], withdrawnLogs: [], withdrawals: [], totalEarnings: 0, lifetimeEarnings: 0 });
   const [editingItem, setEditingItem] = useState(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -298,12 +299,17 @@ const OwnerDashboard = ({ navigation, route }) => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     if (!user) return;
     try {
-      setLoading(true);
-      const resResponse = await api.get('/restaurants');
-      const myRes = resResponse.data.find(r => r.ownerId === user._id);
+      // Only show full-screen loader on initial load (no restaurant data yet)
+      if (!restaurant && !silent) {
+        setLoading(true);
+      }
+      
+      // Use the new optimized endpoint to get ONLY the current owner's restaurant
+      const resResponse = await api.get('/restaurants/my');
+      const myRes = resResponse.data;
       
       if (myRes) {
         setRestaurant(myRes);
@@ -330,6 +336,7 @@ const OwnerDashboard = ({ navigation, route }) => {
 
     } catch (error) {
       console.log('Error dashboard data:', error);
+      // Optional: Alert.alert('Error', 'Failed to refresh dashboard data');
     } finally {
       setLoading(false);
     }
@@ -337,7 +344,7 @@ const OwnerDashboard = ({ navigation, route }) => {
 
   const handleWithdraw = async () => {
     if (!withdrawAmount || Number(withdrawAmount) < 60) {
-      Alert.alert('Error', 'Minimum withdrawal amount is $60.00');
+      Alert.alert('Error', 'Minimum withdrawal amount is Rs. 60.00');
       return;
     }
     if (Number(withdrawAmount) > stats.totalEarnings) {
@@ -387,6 +394,7 @@ const OwnerDashboard = ({ navigation, route }) => {
 
     const { name, price, category, description, ingredients, preparationTime } = formData;
     try {
+      setIsActionLoading(true);
       const payload = {
         name,
         price: parseFloat(price),
@@ -409,9 +417,11 @@ const OwnerDashboard = ({ navigation, route }) => {
       setEditingItem(null);
       setErrors({});
       setFormData({ name: '', price: '', category: '', description: '', ingredients: '', preparationTime: '15', image: '' });
-      fetchData();
+      fetchData(true); // Silent refresh
     } catch (error) {
       Alert.alert('Error', 'Failed to save menu item');
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -420,10 +430,13 @@ const OwnerDashboard = ({ navigation, route }) => {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
+          setIsActionLoading(true);
           await api.delete(`/menu/${id}`);
-          fetchData();
+          fetchData(true); // Silent refresh
         } catch (error) {
           Alert.alert('Error', 'Failed to delete');
+        } finally {
+          setIsActionLoading(false);
         }
       }}
     ]);
@@ -516,7 +529,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                       <div class="item-info">
                         <div class="item-name">${item.name}</div>
                       </div>
-                      <div class="item-price">$${item.price}</div>
+                      <div class="item-price">Rs. ${item.price}</div>
                     </div>
                   `).join('')}
                 </div>
@@ -563,7 +576,7 @@ const OwnerDashboard = ({ navigation, route }) => {
             <Text className="text-gray-400 text-xs">{new Date(item.createdAt).toLocaleTimeString()}</Text>
           </View>
         </View>
-        <Text className="font-bold text-primary">${item.totalAmount.toFixed(2)}</Text>
+        <Text className="font-bold text-primary">Rs. {item.totalAmount.toFixed(2)}</Text>
       </View>
       
       <View className="bg-gray-50 p-4 rounded-2xl mb-4">
@@ -634,17 +647,27 @@ const OwnerDashboard = ({ navigation, route }) => {
         <View className="flex-row justify-between">
           <Text className="text-lg font-bold text-secondary">{item.name}</Text>
           <View className="flex-row space-x-3">
-            <TouchableOpacity onPress={() => { 
-              setEditingItem(item); 
-              setErrors({}); 
-              setFormData({ ...item, ingredients: item.ingredients?.join(', ') || '' }); 
-              setIsModalOpen(true); 
-            }}><Edit2 size={18} color="gray" /></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDeleteItem(item._id)}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>
+            <TouchableOpacity 
+              disabled={isActionLoading}
+              onPress={() => { 
+                setEditingItem(item); 
+                setErrors({}); 
+                setFormData({ ...item, ingredients: item.ingredients?.join(', ') || '' }); 
+                setIsModalOpen(true); 
+              }}
+            >
+              <Edit2 size={18} color={isActionLoading ? "lightgray" : "gray"} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              disabled={isActionLoading}
+              onPress={() => handleDeleteItem(item._id)}
+            >
+              <Trash2 size={18} color={isActionLoading ? "lightgray" : "#ef4444"} />
+            </TouchableOpacity>
           </View>
         </View>
         <View className="flex-row justify-between items-end">
-          <Text className="text-primary font-bold text-lg">${item.price}</Text>
+          <Text className="text-primary font-bold text-lg">Rs. {item.price}</Text>
           <View className="flex-row items-center">
             <Star size={12} color="#ffb800" fill="#ffb800" />
             <Text className="text-[10px] font-bold text-gray-400 ml-1">{item.rating || '0.0'}</Text>
@@ -698,7 +721,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           </View>
         </View>
         <Text className="font-black text-emerald-500 text-xl">
-          +${(item.deliveryFeeStatus === 'pending' ? item.totalAmount : (item.totalAmount - (item.deliveryFee || 0))).toFixed(2)}
+          +Rs. {(item.deliveryFeeStatus === 'pending' ? item.totalAmount : (item.totalAmount - (item.deliveryFee || 0))).toFixed(2)}
         </Text>
       </View>
 
@@ -707,7 +730,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           <View>
              <Text className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Driver Fee</Text>
              <Text className={`font-bold text-sm ${item.deliveryFeeStatus === 'paid' ? 'text-emerald-600' : 'text-orange-500'}`}>
-                ${(item.deliveryFee || 0).toFixed(2)} {item.deliveryFeeStatus === 'paid' ? '• Paid' : ''}
+                Rs. {(item.deliveryFee || 0).toFixed(2)} {item.deliveryFeeStatus === 'paid' ? '• Paid' : ''}
              </Text>
           </View>
           {item.deliveryFeeStatus === 'pending' && item.orderStatus === 'delivered' && (
@@ -797,7 +820,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                <View className="flex-row justify-between items-start mb-6">
                   <View>
                     <Text className="text-white/60 text-[10px] font-bold uppercase tracking-[2px] mb-1">Available Funds</Text>
-                    <Text className="text-4xl font-black text-white">${stats.totalEarnings.toFixed(2)}</Text>
+                    <Text className="text-4xl font-black text-white">Rs. {stats.totalEarnings.toFixed(2)}</Text>
                   </View>
                   <View className="flex-row space-x-2">
                     <TouchableOpacity onPress={() => setIsFullLogsModalVisible(true)} className="bg-white/10 p-3 rounded-2xl">
@@ -812,7 +835,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                <TouchableOpacity 
                 onPress={() => {
                   if (stats.totalEarnings < 60) {
-                    Alert.alert('Insufficient Balance', 'Minimum withdrawal is $60.00');
+                    Alert.alert('Insufficient Balance', 'Minimum withdrawal is Rs. 60.00');
                     return;
                   }
                   setIsWithdrawModalVisible(true);
@@ -832,7 +855,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                   </View>
                   <View>
                     <Text className="text-[8px] text-gray-400 font-bold uppercase">Lifetime</Text>
-                    <Text className="text-secondary font-black text-sm">${stats.lifetimeEarnings.toFixed(2)}</Text>
+                    <Text className="text-secondary font-black text-sm">Rs. {stats.lifetimeEarnings.toFixed(2)}</Text>
                   </View>
                </View>
                <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
@@ -842,7 +865,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                   <View>
                     <Text className="text-[8px] text-gray-400 font-bold uppercase">Pending Fees</Text>
                     <Text className="text-secondary font-black text-sm">
-                      ${stats.history.filter(o => o.deliveryFeeStatus === 'pending').reduce((sum, o) => sum + (o.deliveryFee || 0), 0).toFixed(2)}
+                      Rs. {stats.history.filter(o => o.deliveryFeeStatus === 'pending').reduce((sum, o) => sum + (o.deliveryFee || 0), 0).toFixed(2)}
                     </Text>
                   </View>
                </View>
@@ -1055,7 +1078,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                 </View>
 
                 <View>
-                  <Text className="text-gray-500 mb-1 ml-1">Price ($)</Text>
+                  <Text className="text-gray-500 mb-1 ml-1">Price (Rs.)</Text>
                   <TextInput 
                     value={formData.price.toString()} 
                     onChangeText={t => {setFormData({...formData, price: t}); if(errors.price) setErrors({...errors, price: null})}} 
@@ -1091,10 +1114,14 @@ const OwnerDashboard = ({ navigation, route }) => {
                 </View>
                 <TouchableOpacity 
                   onPress={handleSaveItem} 
-                  disabled={uploading}
-                  className={`bg-primary p-5 rounded-2xl items-center shadow-lg shadow-primary/20 ${uploading ? 'opacity-50' : ''}`}
+                  disabled={uploading || isActionLoading}
+                  className={`bg-primary p-5 rounded-2xl items-center shadow-lg shadow-primary/20 ${(uploading || isActionLoading) ? 'opacity-50' : ''}`}
                 >
-                  <Text className="text-white font-bold text-lg">{editingItem ? 'Update Dish' : 'Add Dish'}</Text>
+                  {isActionLoading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text className="text-white font-bold text-lg">{editingItem ? 'Update Dish' : 'Add Dish'}</Text>
+                  )}
                 </TouchableOpacity>
               </View>
               <View className="h-10" />
@@ -1135,10 +1162,10 @@ const OwnerDashboard = ({ navigation, route }) => {
               <View>
                 <View className="bg-gray-50 p-8 rounded-[40px] mb-8 border border-gray-100 items-center">
                   <Text className="text-gray-400 text-[10px] font-bold uppercase mb-2">Available to Withdraw</Text>
-                  <Text className="text-4xl font-black text-emerald-600">${stats.totalEarnings.toFixed(2)}</Text>
+                  <Text className="text-4xl font-black text-emerald-600">Rs. {stats.totalEarnings.toFixed(2)}</Text>
                 </View>
 
-                <Text className="text-gray-500 mb-3 ml-1 text-[10px] font-bold uppercase">Enter Amount (Min $60.00)</Text>
+                <Text className="text-gray-500 mb-3 ml-1 text-[10px] font-bold uppercase">Enter Amount (Min Rs. 60.00)</Text>
                 <TextInput 
                   className="bg-gray-50 p-6 rounded-3xl border border-gray-100 text-2xl font-black text-secondary mb-8 text-center"
                   placeholder="0.00"
@@ -1197,7 +1224,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                         {w.method === 'card' ? <CreditCard size={14} color="gray" /> : <Globe size={14} color="gray" />}
                         <Text className="text-gray-400 text-[10px] font-bold uppercase ml-1">{w.method}</Text>
                       </View>
-                      <Text className="font-bold text-secondary text-lg">${w.amount.toFixed(2)}</Text>
+                      <Text className="font-bold text-secondary text-lg">Rs. {w.amount.toFixed(2)}</Text>
                       <Text className="text-gray-400 text-[10px] mt-1">{new Date(w.createdAt).toLocaleDateString()}</Text>
                     </View>
                     <View className="bg-emerald-50 px-3 py-1 rounded-full">
@@ -1248,7 +1275,7 @@ const OwnerDashboard = ({ navigation, route }) => {
                     </View>
                     <View className="items-end">
                       <Text className="font-black text-xl text-gray-300">
-                        +${(order.totalAmount - (order.deliveryFee || 0)).toFixed(2)}
+                        +Rs. {(order.totalAmount - (order.deliveryFee || 0)).toFixed(2)}
                       </Text>
                     </View>
                   </View>

@@ -115,7 +115,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
                 </View>
               </View>
             </View>
-            <Text className="text-primary font-black text-xl">${item.totalAmount.toFixed(2)}</Text>
+            <Text className="text-primary font-black text-xl">Rs. {item.totalAmount.toFixed(2)}</Text>
           </View>
         </TouchableOpacity>
 
