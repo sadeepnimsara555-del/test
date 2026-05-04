@@ -32,7 +32,8 @@ const OrdersHistoryScreen = ({ navigation }) => {
             items: [...order.items],
             totalAmount: order.totalAmount,
             createdAt: order.createdAt,
-            orderStatus: order.orderStatus
+            orderStatus: order.orderStatus,
+            deliveryReview: order.deliveryReview || null
           };
         } else {
           const timeDiff = Math.abs(new Date(currentBundle.createdAt).getTime() - new Date(order.createdAt).getTime());
@@ -40,6 +41,9 @@ const OrdersHistoryScreen = ({ navigation }) => {
             currentBundle.orders.push(order);
             currentBundle.items.push(...order.items);
             currentBundle.totalAmount += order.totalAmount;
+            if (!currentBundle.deliveryReview && order.deliveryReview) {
+              currentBundle.deliveryReview = order.deliveryReview;
+            }
           } else {
             bundledOrders.push(currentBundle);
             currentBundle = {
@@ -50,7 +54,8 @@ const OrdersHistoryScreen = ({ navigation }) => {
               items: [...order.items],
               totalAmount: order.totalAmount,
               createdAt: order.createdAt,
-              orderStatus: order.orderStatus
+              orderStatus: order.orderStatus,
+              deliveryReview: order.deliveryReview || null
             };
           }
         }
