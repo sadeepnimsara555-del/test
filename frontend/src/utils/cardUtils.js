@@ -41,7 +41,7 @@ export const validateCardDetails = (cardNumber, expiry, cvv) => {
   const inputYear = parseInt(cleanExpiry.substring(2, 4));
   const currentYearFull = new Date().getFullYear();
   const currentYear = currentYearFull % 100;
-  const maxYear = currentYear + 10;
+  const maxYear = currentYear + 20;
 
   if (inputYear < currentYear || inputYear > maxYear) {
     return { valid: false, message: 'check the year again' };
