@@ -29,6 +29,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
   const [isFullLogsModalVisible, setIsFullLogsModalVisible] = useState(false);
 
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState(null);
+  const [isOrderDetailsModalVisible, setIsOrderDetailsModalVisible] = useState(false);
   const [mapLoading, setMapLoading] = useState(false);
   const mapRef = useRef(null);
 
@@ -481,7 +483,14 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 
                 <Text className="font-bold text-secondary text-lg mb-5 ml-1">Current Active Earnings</Text>
                 {stats.history.length > 0 ? stats.history.map(order => (
-                  <View key={order._id} className="bg-white p-5 rounded-3xl mb-4 border border-gray-100 flex-row justify-between items-center shadow-sm">
+                  <TouchableOpacity 
+                    key={order._id} 
+                    onPress={() => {
+                      setSelectedOrderForDetails(order);
+                      setIsOrderDetailsModalVisible(true);
+                    }}
+                    className="bg-white p-5 rounded-3xl mb-4 border border-gray-100 flex-row justify-between items-center shadow-sm active:opacity-70"
+                  >
                     <View className="flex-1">
                       <Text className="font-bold text-secondary text-base">Order #{order._id.substring(0,8).toUpperCase()}</Text>
                       <View className="flex-row items-center mt-1">
@@ -499,7 +508,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 )) : (
                    <View className="items-center mt-10">
                       <History size={40} color="lightgray" />
@@ -750,6 +759,78 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+      {/* Order Details Modal */}
+      <Modal visible={isOrderDetailsModalVisible} animationType="slide" transparent>
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-[50px] p-8 pb-16">
+            <View className="flex-row justify-between items-center mb-8">
+              <View>
+                <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Delivery Details</Text>
+                <Text className="text-2xl font-black text-secondary">Job Overview</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsOrderDetailsModalVisible(false)} className="bg-gray-100 p-2 rounded-full">
+                <X size={20} color="gray" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedOrderForDetails && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="bg-gray-50 p-6 rounded-[32px] mb-6">
+                  <View className="flex-row justify-between items-center mb-4">
+                    <Text className="text-gray-400 font-bold text-xs uppercase">Order ID</Text>
+                    <Text className="text-secondary font-black">#{selectedOrderForDetails._id.toUpperCase()}</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-gray-400 font-bold text-xs uppercase">Date</Text>
+                    <Text className="text-secondary font-bold">{new Date(selectedOrderForDetails.updatedAt).toLocaleString()}</Text>
+                  </View>
+                </View>
+
+                <View className="space-y-6 mb-8">
+                  <View className="flex-row items-start">
+                    <View className="bg-primary/10 p-3 rounded-2xl mr-4">
+                      <MapPin size={20} color="#ff5a5f" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[10px] text-gray-400 font-bold uppercase mb-1">Restaurant</Text>
+                      <Text className="text-base font-bold text-secondary">{selectedOrderForDetails.restaurant?.name || 'Unknown Restaurant'}</Text>
+                      <Text className="text-xs text-gray-500 leading-4">{selectedOrderForDetails.restaurant?.address || 'Address not available'}</Text>
+                    </View>
+                  </View>
+
+                  <View className="flex-row items-start">
+                    <View className="bg-green-50 p-3 rounded-2xl mr-4">
+                      <Navigation size={20} color="#4ade80" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[10px] text-gray-400 font-bold uppercase mb-1">Customer</Text>
+                      <Text className="text-base font-bold text-secondary">{selectedOrderForDetails.user?.name || 'Guest'}</Text>
+                      <Text className="text-xs text-gray-500 leading-4">{selectedOrderForDetails.deliveryAddress}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View className="bg-secondary p-6 rounded-[32px] flex-row justify-between items-center">
+                  <View>
+                    <Text className="text-white/60 text-[10px] font-bold uppercase">Your Earnings</Text>
+                    <Text className="text-2xl font-black text-white">Rs. {(selectedOrderForDetails.deliveryFee || 0).toFixed(2)}</Text>
+                  </View>
+                  <View className={`px-4 py-2 rounded-2xl ${selectedOrderForDetails.deliveryFeeStatus === 'paid' ? 'bg-emerald-500' : 'bg-orange-500'}`}>
+                    <Text className="text-white font-black text-[10px] uppercase">{selectedOrderForDetails.deliveryFeeStatus === 'paid' ? 'Received' : 'Pending'}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity 
+                  onPress={() => setIsOrderDetailsModalVisible(false)}
+                  className="bg-gray-100 p-5 rounded-3xl items-center mt-8"
+                >
+                  <Text className="text-secondary font-bold">Close Details</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
