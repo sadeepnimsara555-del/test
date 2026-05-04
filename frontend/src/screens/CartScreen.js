@@ -21,7 +21,7 @@ const CartScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         <View className="flex-row justify-between items-center">
-          <Text className="text-primary font-bold text-lg">Rs. {item.price}</Text>
+          <Text className="text-primary font-bold text-lg">Rs. {item.price ?? '0'}</Text>
           <View className="flex-row items-center bg-gray-50 p-1 rounded-xl border border-gray-100">
             <TouchableOpacity 
               onPress={() => updateQuantity(item._id, item.quantity - 1)}
@@ -81,7 +81,7 @@ const CartScreen = ({ navigation }) => {
           <Text className="text-lg font-bold text-secondary mb-4">Summary</Text>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Subtotal</Text>
-            <Text className="text-secondary font-bold">Rs. {cartTotal.toFixed(2)}</Text>
+            <Text className="text-secondary font-bold">Rs. {(cartTotal || 0).toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x Rs. 2.50)</Text>
@@ -90,7 +90,7 @@ const CartScreen = ({ navigation }) => {
           <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100">
             <Text className="text-lg font-bold text-secondary">Total</Text>
             <Text className="text-lg font-bold text-primary">
-              Rs. {(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}
+              Rs. {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}
             </Text>
           </View>
         </View>

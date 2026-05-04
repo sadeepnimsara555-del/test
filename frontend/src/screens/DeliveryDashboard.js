@@ -107,7 +107,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
     }
 
     if (amt > stats.totalEarnings) {
-      Alert.alert('Insufficient Balance', `You can only withdraw up to Rs. ${stats.totalEarnings.toFixed(2)}`);
+      Alert.alert('Insufficient Balance', `You can only withdraw up to Rs. ${(stats.totalEarnings || 0).toFixed(2)}`);
       return;
     }
 
@@ -152,7 +152,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
           <Text className="font-bold text-secondary text-lg">Order #{order._id.substring(0, 8)}</Text>
           <Text className="text-gray-400 text-xs mt-1">{new Date(order.createdAt).toLocaleTimeString()}</Text>
         </View>
-        <Text className="text-primary font-black text-xl">Rs. {order.totalAmount}</Text>
+        <Text className="text-primary font-black text-xl">Rs. {order.totalAmount ?? '0'}</Text>
       </View>
 
       <View className="bg-gray-50 p-4 rounded-3xl mb-5">
@@ -423,7 +423,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                    <View className="flex-row justify-between items-start mb-6">
                       <View>
                         <Text className="text-white/60 text-[10px] font-bold uppercase tracking-[2px] mb-1">Available Balance</Text>
-                        <Text className="text-4xl font-black text-white">Rs. {stats.totalEarnings.toFixed(2)}</Text>
+                        <Text className="text-4xl font-black text-white">Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text>
                       </View>
                       <View className="flex-row space-x-2">
                         <TouchableOpacity onPress={() => setIsFullLogsModalVisible(true)} className="bg-white/10 p-3 rounded-2xl">
@@ -475,7 +475,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                         </View>
                         <View>
                           <Text className="text-[8px] text-gray-400 font-bold uppercase">To Unlock</Text>
-                          <Text className="text-secondary font-black text-sm">Rs. {(1000 - stats.totalEarnings).toFixed(2)}</Text>
+                          <Text className="text-secondary font-black text-sm">Rs. {(1000 - (stats.totalEarnings || 0)).toFixed(2)}</Text>
                         </View>
                      </View>
                    )}
@@ -593,7 +593,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
 
                 <View className="bg-gray-50 p-6 rounded-[32px] mb-8 border border-gray-100">
-                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2">Wallet Balance: Rs. {stats.totalEarnings.toFixed(2)}</Text>
+                  <Text className="text-gray-400 text-center text-[10px] font-bold uppercase mb-2">Wallet Balance: Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text>
                   <View className="flex-row items-center justify-center bg-white p-4 rounded-2xl border border-gray-100">
                     <DollarSign size={24} color="#059669" />
                     <TextInput 
@@ -652,7 +652,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                 </View>
                 <Text className="text-3xl font-black text-secondary text-center mb-4">Payout Successful!</Text>
                 <Text className="text-gray-500 text-center mb-10 leading-6 px-10">
-                  Your withdrawal of <Text className="font-bold text-emerald-600">Rs. {stats.totalEarnings.toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
+                  Your withdrawal of <Text className="font-bold text-emerald-600">Rs. {(stats.totalEarnings || 0).toFixed(2)}</Text> to your <Text className="font-bold text-secondary">{selectedMethod?.type === 'card' ? 'Credit Card' : 'PayPal'}</Text> has been processed successfully.
                 </Text>
                 <TouchableOpacity 
                   onPress={() => {
@@ -699,7 +699,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className="font-black text-red-500 text-lg">-Rs. {w.amount.toFixed(2)}</Text>
+                      <Text className="font-black text-red-500 text-lg">-Rs. {(w.amount || 0).toFixed(2)}</Text>
                       <Text className="text-emerald-600 text-[8px] font-bold uppercase bg-emerald-50 px-2 py-1 rounded-md mt-1">Success</Text>
                     </View>
                   </View>

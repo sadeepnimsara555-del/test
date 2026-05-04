@@ -263,7 +263,7 @@ const CheckoutScreen = ({ navigation }) => {
           <Text className="text-lg font-bold text-secondary mb-4">Final Summary</Text>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Items ({cart.reduce((sum, i) => sum + i.quantity, 0)})</Text>
-            <Text className="text-secondary font-bold">Rs. {cartTotal.toFixed(2)}</Text>
+            <Text className="text-secondary font-bold">Rs. {(cartTotal || 0).toFixed(2)}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
             <Text className="text-gray-500">Delivery Fee ({new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size} x Rs. 2.50)</Text>
@@ -271,7 +271,7 @@ const CheckoutScreen = ({ navigation }) => {
           </View>
           <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100">
             <Text className="text-lg font-bold text-secondary">Payable Amount</Text>
-            <Text className="text-xl font-bold text-primary">Rs. {(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-xl font-bold text-primary">Rs. {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -285,7 +285,7 @@ const CheckoutScreen = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-lg">Confirm & Pay Rs. {(cartTotal + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
+            <Text className="text-white font-bold text-lg">Confirm & Pay Rs. {((cartTotal || 0) + (new Set(cart.map(i => i.restaurantId?._id || i.restaurantId)).size * 2.50)).toFixed(2)}</Text>
           )}
         </TouchableOpacity>
       </View>

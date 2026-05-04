@@ -10,6 +10,9 @@
     "preview": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://test-production-614d.up.railway.app/api"
       }
     },
     "production": {}

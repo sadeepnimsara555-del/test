@@ -65,7 +65,9 @@ const OrdersHistoryScreen = ({ navigation }) => {
         bundledOrders.push(currentBundle);
       }
       
+      console.log('DEBUG: Raw Orders from API:', rawOrders.map(o => ({ id: o._id, review: !!o.deliveryReview })));
       setOrders(bundledOrders);
+      console.log('DEBUG: Bundled Orders:', bundledOrders.map(o => ({ id: o._id, review: !!o.deliveryReview })));
     } catch (error) {
       console.log('Error fetching history', error);
     } finally {
@@ -121,7 +123,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
                 </View>
               </View>
             </View>
-            <Text className="text-primary font-black text-xl">Rs. {item.totalAmount.toFixed(2)}</Text>
+            <Text className="text-primary font-black text-xl">Rs. {(item.totalAmount || 0).toFixed(2)}</Text>
           </View>
         </TouchableOpacity>
 
@@ -163,7 +165,7 @@ const OrdersHistoryScreen = ({ navigation }) => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <View className="px-6 py-6 bg-white border-b border-gray-100">
-        <Text className="text-3xl font-bold text-secondary">My Orders</Text>
+        <Text className="text-3xl font-bold text-secondary">My Orders (DEBUG)</Text>
       </View>
 
       <FlatList

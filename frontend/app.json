@@ -21,6 +21,7 @@
       }
     },
     "android": {
+      "package": "com.foodieapp.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -28,7 +29,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -37,6 +40,11 @@
     "plugins": [
       "expo-secure-store",
       "expo-location"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "30245015-d199-48a3-8ed7-dd0eb8a28eee"
+      }
+    }
   }
 }

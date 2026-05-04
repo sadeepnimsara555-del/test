@@ -621,7 +621,7 @@ const OwnerDashboard = ({ navigation, route }) => {
             <Text className="text-gray-400 text-xs">{new Date(item.createdAt).toLocaleTimeString()}</Text>
           </View>
         </View>
-        <Text className="font-bold text-primary">Rs. {item.totalAmount.toFixed(2)}</Text>
+        <Text className="font-bold text-primary">Rs. {(item.totalAmount || 0).toFixed(2)}</Text>
       </View>
       
       <View className="bg-gray-50 p-4 rounded-2xl mb-4">
@@ -712,7 +712,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           </View>
         </View>
         <View className="flex-row justify-between items-end">
-          <Text className="text-primary font-bold text-lg">Rs. {item.price}</Text>
+          <Text className="text-primary font-bold text-lg">Rs. {item.price ?? '0'}</Text>
           <View className="flex-row items-center">
             <Star size={12} color="#ffb800" fill="#ffb800" />
             <Text className="text-[10px] font-bold text-gray-400 ml-1">{item.rating || '0.0'}</Text>
@@ -766,7 +766,7 @@ const OwnerDashboard = ({ navigation, route }) => {
           </View>
         </View>
         <Text className="font-black text-emerald-500 text-xl">
-          +Rs. {(item.deliveryFeeStatus === 'pending' ? item.totalAmount : (item.totalAmount - (item.deliveryFee || 0))).toFixed(2)}
+          +Rs. {((item.deliveryFeeStatus === 'pending' ? (item.totalAmount || 0) : ((item.totalAmount || 0) - (item.deliveryFee || 0))) || 0).toFixed(2)}
         </Text>
       </View>
 
