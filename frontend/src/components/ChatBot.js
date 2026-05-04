@@ -87,7 +87,7 @@ const ChatBot = () => {
               <Image source={{ uri: food.image }} className="w-8 h-8 rounded-lg mr-2" />
               <View>
                 <Text className="text-[10px] font-bold text-secondary" numberOfLines={1}>{food.name}</Text>
-                <Text className="text-[8px] text-primary font-bold">${food.price}</Text>
+                <Text className="text-[8px] text-primary font-bold">Rs. {food.price}</Text>
               </View>
             </TouchableOpacity>
           ))}
