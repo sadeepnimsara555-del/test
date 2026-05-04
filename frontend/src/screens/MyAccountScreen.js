@@ -251,7 +251,7 @@ const MyAccountScreen = ({ navigation }) => {
                   ) : (
                     <View className="flex-row items-center px-1">
                       <Globe size={16} color="white" />
-                      <Text className="text-white text-[10px] font-bold ml-1">GPS</Text>
+                      <Text className="text-white text-[10px] font-bold ml-1">Tag</Text>
                     </View>
                   )}
                 </TouchableOpacity>
