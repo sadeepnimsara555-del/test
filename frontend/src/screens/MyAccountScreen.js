@@ -8,9 +8,10 @@ import api, { API_URL } from '../services/api';
 import * as SecureStore from 'expo-secure-store';
 import { getCurrentAddress } from '../utils/mapUtils';
 
-const MyAccountScreen = ({ navigation }) => {
+const MyAccountScreen = ({ navigation, route }) => {
   const { user, updateProfile, logout } = useContext(AuthContext);
-  const [activeSubTab, setActiveSubTab] = useState(null); // null, 'info', 'control'
+  const { tab } = route.params || {};
+  const [activeSubTab, setActiveSubTab] = useState(tab || null); // null, 'info', 'control'
   
   // Info Form States
   const [name, setName] = useState(user?.name || '');

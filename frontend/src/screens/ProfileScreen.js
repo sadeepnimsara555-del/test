@@ -62,7 +62,10 @@ const ProfileScreen = ({ navigation }) => {
               source={{ uri: user?.profileImage || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name) + '&size=256' }} 
               className="w-32 h-32 rounded-full border-4 border-white shadow-xl"
             />
-            <TouchableOpacity className="absolute bottom-0 right-0 bg-primary w-10 h-10 rounded-full items-center justify-center border-4 border-white shadow-sm">
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('MyAccount', { tab: 'info' })}
+              className="absolute bottom-0 right-0 bg-primary w-10 h-10 rounded-full items-center justify-center border-4 border-white shadow-sm"
+            >
               <Settings size={18} color="white" />
             </TouchableOpacity>
           </View>
