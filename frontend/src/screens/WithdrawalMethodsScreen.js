@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, CreditCard, Plus, Trash2, CheckCircle, Globe } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import { formatCardNumber, formatExpiry, validateCardDetails } from '../utils/cardUtils';
 
 const WithdrawalMethodsScreen = ({ navigation }) => {
   const { user, updateProfile } = useContext(AuthContext);
@@ -18,10 +19,14 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
   const [paypalEmail, setPaypalEmail] = useState('');
 
   const handleAddMethod = async () => {
-    if (methodType === 'card' && (!cardNumber || !expiry || !cvv)) {
-      Alert.alert('Error', 'Please fill all card details');
-      return;
+    if (methodType === 'card') {
+      const validation = validateCardDetails(cardNumber, expiry, cvv);
+      if (!validation.valid) {
+        Alert.alert('Invalid Card', validation.message);
+        return;
+      }
     }
+    
     if (methodType === 'paypal' && !paypalEmail) {
       Alert.alert('Error', 'Please enter your PayPal email');
       return;
@@ -148,19 +153,19 @@ const WithdrawalMethodsScreen = ({ navigation }) => {
             {methodType === 'card' ? (
               <View className="space-y-4">
                 <TextInput 
-                  placeholder="Card Number" 
+                  placeholder="Card Number (xxxx xxxx xxxx xxxx)" 
                   className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary font-bold"
                   keyboardType="numeric"
                   value={cardNumber}
-                  onChangeText={setCardNumber}
-                  maxLength={16}
+                  onChangeText={(t) => setCardNumber(formatCardNumber(t))}
+                  maxLength={19}
                 />
                 <View className="flex-row space-x-3">
                   <TextInput 
                     placeholder="MM/YY" 
                     className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary font-bold"
                     value={expiry}
-                    onChangeText={setExpiry}
+                    onChangeText={(t) => setExpiry(formatExpiry(t))}
                     maxLength={5}
                   />
                   <TextInput 

@@ -5,6 +5,7 @@ import { ArrowLeft, CreditCard, Lock, CheckCircle } from 'lucide-react-native';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import { formatCardNumber, formatExpiry, validateCardDetails } from '../utils/cardUtils';
 
 const PaymentDetailsScreen = ({ route, navigation }) => {
   const { amount, provider, address, orderType, savedMethod } = route.params;
@@ -23,8 +24,9 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
 
   const handlePayment = async () => {
     if (provider === 'card') {
-      if (!cardNumber || !expiry || !cvv) {
-        Alert.alert('Error', 'Please fill all card details');
+      const validation = validateCardDetails(cardNumber, expiry, cvv);
+      if (!validation.valid) {
+        Alert.alert('Invalid Card', validation.message);
         return;
       }
     } else {
@@ -167,8 +169,8 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
                     placeholder="xxxx xxxx xxxx xxxx"
                     keyboardType="numeric"
                     value={cardNumber}
-                    onChangeText={setCardNumber}
-                    maxLength={16}
+                    onChangeText={(t) => setCardNumber(formatCardNumber(t))}
+                    maxLength={19}
                   />
                 </View>
               </View>
@@ -180,7 +182,7 @@ const PaymentDetailsScreen = ({ route, navigation }) => {
                     className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-secondary font-bold"
                     placeholder="MM/YY"
                     value={expiry}
-                    onChangeText={setExpiry}
+                    onChangeText={(t) => setExpiry(formatExpiry(t))}
                     maxLength={5}
                   />
                 </View>
