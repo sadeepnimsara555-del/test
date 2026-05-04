@@ -99,8 +99,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
     }
 
     const amt = parseFloat(withdrawAmount);
-    if (isNaN(amt) || amt < 20) {
-      Alert.alert('Invalid Amount', 'Minimum withdrawal amount is Rs. 20.00');
+    if (isNaN(amt) || amt <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid amount to withdraw.');
       return;
     }
 
@@ -435,8 +435,8 @@ const DeliveryDashboard = ({ navigation, route }) => {
 
                    <TouchableOpacity 
                     onPress={() => {
-                      if (stats.totalEarnings < 20) {
-                        Alert.alert('Minimum Balance Required', 'You need to earn at least Rs. 20.00 (Received) to request a withdrawal.');
+                      if (stats.totalEarnings < 1000) {
+                        Alert.alert('Threshold Not Met', 'Minimum balance of Rs. 1000.00 is required to initiate a withdrawal.');
                         return;
                       }
                       if (!user.withdrawalMethods || user.withdrawalMethods.length === 0) {
@@ -448,7 +448,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       }
                       setIsWithdrawModalVisible(true);
                     }}
-                    className={`p-5 rounded-3xl flex-row items-center justify-center ${stats.totalEarnings >= 20 ? 'bg-primary' : 'bg-white/10'}`}
+                    className={`p-5 rounded-3xl flex-row items-center justify-center ${stats.totalEarnings >= 1000 ? 'bg-primary' : 'bg-white/10'}`}
                    >
                       <DollarSign size={20} color="white" />
                       <Text className="text-white font-black text-base ml-2">Withdraw Earnings</Text>
@@ -466,14 +466,14 @@ const DeliveryDashboard = ({ navigation, route }) => {
                         <Text className="text-secondary font-black text-sm">Rs. {(stats.pendingEarnings || 0).toFixed(2)}</Text>
                       </View>
                    </View>
-                   {stats.totalEarnings < 20 && (
+                   {stats.totalEarnings < 1000 && (
                      <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
                         <View className="bg-emerald-50 p-2 rounded-xl mr-3">
                           <CheckCircle size={16} color="#10b981" />
                         </View>
                         <View>
                           <Text className="text-[8px] text-gray-400 font-bold uppercase">To Unlock</Text>
-                          <Text className="text-secondary font-black text-sm">Rs. {(20 - stats.totalEarnings).toFixed(2)}</Text>
+                          <Text className="text-secondary font-black text-sm">Rs. {(1000 - stats.totalEarnings).toFixed(2)}</Text>
                         </View>
                      </View>
                    )}
@@ -596,7 +596,7 @@ const DeliveryDashboard = ({ navigation, route }) => {
                       autoFocus
                     />
                   </View>
-                  <Text className="text-gray-400 text-[8px] text-center mt-3 font-bold uppercase">Enter amount to withdraw (Min Rs. 20.00)</Text>
+                  <Text className="text-gray-400 text-[8px] text-center mt-3 font-bold uppercase">Enter amount to withdraw</Text>
                 </View>
 
                 <Text className="font-bold text-secondary text-sm mb-4 ml-1">Select Destination</Text>
