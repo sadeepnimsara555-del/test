@@ -1,4 +1,10 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Force DNS to prefer IPv4 to avoid ENETUNREACH on cloud providers like Railway
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const sendEmail = async (options) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
