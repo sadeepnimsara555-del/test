@@ -146,6 +146,11 @@ const updateMenuItem = async (req, res, next) => {
 
     if (menuItem) {
       const restaurant = await Restaurant.findById(menuItem.restaurantId);
+      if (!restaurant) {
+        res.status(404);
+        throw new Error('Associated restaurant not found');
+      }
+
       if (restaurant.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         res.status(401);
         throw new Error('Not authorized to update this menu item');
@@ -180,6 +185,11 @@ const deleteMenuItem = async (req, res, next) => {
 
     if (menuItem) {
       const restaurant = await Restaurant.findById(menuItem.restaurantId);
+      if (!restaurant) {
+        res.status(404);
+        throw new Error('Associated restaurant not found');
+      }
+
       if (restaurant.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         res.status(401);
         throw new Error('Not authorized to delete this menu item');

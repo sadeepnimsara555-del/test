@@ -77,6 +77,11 @@ const OwnerDashboard = ({ navigation, route }) => {
       quality: 0.7,
     });
 
+    if (!restaurant) {
+      Alert.alert('Error', 'Restaurant data not loaded. Please wait a moment.');
+      return;
+    }
+
     if (!result.canceled) {
       try {
         setUploading(true);
@@ -128,6 +133,11 @@ const OwnerDashboard = ({ navigation, route }) => {
       aspect: [16, 9],
       quality: 0.7,
     });
+
+    if (!restaurant) {
+      Alert.alert('Error', 'Restaurant data not loaded. Please wait a moment.');
+      return;
+    }
 
     if (!result.canceled) {
       try {
@@ -356,6 +366,11 @@ const OwnerDashboard = ({ navigation, route }) => {
       return;
     }
 
+    if (!restaurant) {
+      Alert.alert('Error', 'Restaurant data not loaded.');
+      return;
+    }
+
     try {
       setWithdrawLoading(true);
       await api.post('/orders/restaurant-withdraw', {
@@ -365,7 +380,7 @@ const OwnerDashboard = ({ navigation, route }) => {
       });
 
       setWithdrawSuccess(true);
-      fetchData();
+      fetchData(true); // Silent refresh
     } catch (e) {
       Alert.alert('Withdrawal Failed', e.response?.data?.message || 'Something went wrong');
     } finally {
@@ -389,6 +404,11 @@ const OwnerDashboard = ({ navigation, route }) => {
 
   const handleSaveItem = async () => {
     if (!validateForm()) {
+      return;
+    }
+
+    if (!restaurant) {
+      Alert.alert('Error', 'Restaurant data not loaded.');
       return;
     }
 
@@ -443,6 +463,11 @@ const OwnerDashboard = ({ navigation, route }) => {
   };
 
   const handleUpdateRestaurant = async () => {
+    if (!restaurant) {
+      Alert.alert('Error', 'Restaurant data not loaded.');
+      return;
+    }
+
     try {
       setUploading(true);
       
