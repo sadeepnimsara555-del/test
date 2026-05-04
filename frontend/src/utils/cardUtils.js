@@ -38,6 +38,23 @@ export const validateCardDetails = (cardNumber, expiry, cvv) => {
   if (month > 12) return { valid: false, message: 'Expiry month cannot be more than 12' };
   if (month === 0) return { valid: false, message: 'Expiry month cannot be 00' };
 
+  const inputYear = parseInt(cleanExpiry.substring(2, 4));
+  const currentYearFull = new Date().getFullYear();
+  const currentYear = currentYearFull % 100;
+  const maxYear = currentYear + 10;
+
+  if (inputYear < currentYear || inputYear > maxYear) {
+    return { valid: false, message: 'check the year again' };
+  }
+
+  // If same year, check if month has passed
+  if (inputYear === currentYear) {
+    const currentMonth = new Date().getMonth() + 1; // getMonth() is 0-indexed
+    if (month < currentMonth) {
+      return { valid: false, message: 'This card has already expired' };
+    }
+  }
+
   if (cvv.length !== 3) return { valid: false, message: 'CVV must be exactly 3 digits' };
   
   return { valid: true };
