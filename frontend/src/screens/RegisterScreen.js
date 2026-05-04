@@ -181,12 +181,15 @@ const RegisterScreen = ({ navigation }) => {
               <TouchableOpacity 
                 onPress={handleTagLocation}
                 disabled={locationLoading}
-                className="bg-primary/10 p-3 rounded-xl ml-2"
+                className="bg-primary p-3 rounded-xl ml-2 shadow-sm active:opacity-80"
               >
                 {locationLoading ? (
-                  <ActivityIndicator size="small" color="#ff5a5f" />
+                  <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Globe size={20} color="#ff5a5f" />
+                  <View className="flex-row items-center px-1">
+                    <Globe size={16} color="white" />
+                    <Text className="text-white text-[10px] font-bold ml-1">GPS</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
