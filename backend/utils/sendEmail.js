@@ -22,12 +22,12 @@ const sendEmail = async (options) => {
     console.warn('⚠️ DNS Resolve failed, using hostname:', dnsErr.message);
   }
 
-  console.log(`📡 [v3] Attempting email via ${smtpHost}:587`);
+  console.log(`📡 [v4] Attempting email via ${smtpHost}:465`);
   
   const transporter = nodemailer.createTransport({
     host: smtpHost,
-    port: 587,
-    secure: false, // Port 587 uses STARTTLS
+    port: 465,
+    secure: true, // Port 465 uses SSL/TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
