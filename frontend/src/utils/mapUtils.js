@@ -47,28 +47,40 @@ export const getCurrentAddress = async () => {
       throw new Error('Permission to access location was denied');
     }
 
-    let location = await Location.getCurrentPositionAsync({});
-    let reverseGeocode = await Location.reverseGeocodeAsync({
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude
+    let location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
     });
+    
+    const { latitude, longitude } = location.coords;
 
-    if (reverseGeocode.length > 0) {
-      const addr = reverseGeocode[0];
-      const parts = [
-        addr.name,
-        addr.street,
-        addr.district,
-        addr.city,
-        addr.region,
-        addr.country
-      ].filter(part => part && part !== 'null' && part !== '');
-      
-      // Remove duplicates and join
-      return [...new Set(parts)].join(', ');
-    } else {
-      return `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`;
+    try {
+      // Wrap reverseGeocodeAsync in a timeout to prevent long hangs
+      const reverseGeocodePromise = Location.reverseGeocodeAsync({ latitude, longitude });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 5000)
+      );
+
+      let reverseGeocode = await Promise.race([reverseGeocodePromise, timeoutPromise]);
+
+      if (reverseGeocode && reverseGeocode.length > 0) {
+        const addr = reverseGeocode[0];
+        const parts = [
+          addr.name,
+          addr.street,
+          addr.district,
+          addr.city,
+          addr.region,
+          addr.country
+        ].filter(part => part && part !== 'null' && part !== '');
+        
+        return [...new Set(parts)].join(', ');
+      }
+    } catch (innerError) {
+      console.warn('Reverse geocoding failed or timed out, falling back to coordinates');
     }
+
+    // Fallback: Return raw coordinates if reverse geocoding fails
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
   } catch (error) {
     console.error('getCurrentAddress error:', error);
     throw error;
