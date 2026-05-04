@@ -15,17 +15,17 @@ const sendEmail = async (options) => {
   console.log(' Attempting to send email via:', process.env.EMAIL_SERVICE || 'gmail');
   
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL/TLS
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT || 587,
+    secure: process.env.SMTP_PORT == 465, // true only for 465
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.EMAIL_USER || process.env.SMTP_USER,
+      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
     },
     tls: {
       rejectUnauthorized: false,
     },
-    family: 4, // Force IPv4 to avoid ENETUNREACH on Railway
+    family: 4, // Force IPv4
   });
 
   // Verify connection configuration
